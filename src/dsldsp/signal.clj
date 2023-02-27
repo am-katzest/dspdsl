@@ -65,17 +65,13 @@
 ;; todo: function `with` (with cfg :function square) -> (create  (update cfg :function square))
 ;; (defn discretize [:keys])
 (defn fancy-op [operator]
-  (fn me ([ar br]
-          (let [a (want-fancy ar)
-                b (want-fancy br)
-                start (min (:start a) (:start b))
-                stop (max (:stop a) (:stop b))
-                fa (:fun a)
-                fb (:fun b)]
-            {:type :fancy
-             :start start
-             :stop stop
-             :fun (fn [x] (operator (fa x) (fb x)))}))
-    ([a b & c]
-     (apply me (me a b) c))))
+  (fn [& xs]
+    (let [xs (mapv want-fancy xs)
+          start (apply min (mapv :start xs))
+          stop (apply max (mapv :stop xs))
+          fns (mapv :fun xs)]
+      {:type :fancy
+       :start start
+       :stop stop
+       :fun (fn [x] (apply operator (mapv #(% x) fns)))})))
 (def D+ (fancy-op +))
