@@ -28,7 +28,7 @@
 
 (defn truncate [period sampling xs]
   (b/cond
-    (and period (pos? period)) xs
+    (or (nil? period) (zero? period)) xs
     :let [samples-per-period (/ period sampling)]
     (>= samples-per-period period) xs ;no way to fix it ¯\_(ツ)_/¯
     :let [to-drop (rem (count xs) period)]
@@ -54,8 +54,25 @@
 (defn showboth [x]
   (histogram x)
   (show x))
+
 ;┏┓╻┏━┓┏┓╻   ┏━╸┏━┓┏━┓┏━┓╻ ╻╻ ╻   ╺┳╸╻ ╻╻┏┓╻┏━╸┏━┓
 ;┃┗┫┃ ┃┃┗┫╺━╸┃╺┓┣┳┛┣━┫┣━┛┣━┫┗┳┛    ┃ ┣━┫┃┃┗┫┃╺┓┗━┓
 ;╹ ╹┗━┛╹ ╹   ┗━┛╹┗╸╹ ╹╹  ╹ ╹ ╹     ╹ ╹ ╹╹╹ ╹┗━┛┗━┛
 
-(defn stat [x])
+(defn stat [x]
+  (let [{:keys [values imaginary sampling period]} (s/want-discrete x)
+        calc (fn [xs] (let [xs (truncate period sampling xs)
+                            time (/ (count xs)) ; TODO probably off by one
+                            avg-by #(->> xs (map %) (reduce +) (* time))
+                            avg (avg-by identity)
+                            avg2 (avg-by #(* % %))]
+                        {:średnia-bezwzględna (avg-by abs)
+                         :średnia avg
+                         :moc-średnia avg2
+                         :wariancja (avg-by #(abs (- % avg)))
+                         :wartość-skuteczna (Math/sqrt avg2)}))]
+
+    (if imaginary
+      {:real (calc values)
+       :imag (calc imaginary)}
+      (calc values))))
