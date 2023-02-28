@@ -22,6 +22,8 @@
 (def ^:dynamic sampling-frequency 1/1000)
 (defn max0 [x] (max x 0))
 (defn min0 [x] (min x 0))
+(defn clamp ([m] (clamp m (- m)))
+  ([m -m] (fn [x] (max -m (min m x)))))
 (defn div0 [& xs]
   (try (apply / xs)
        (catch java.lang.ArithmeticException _ 0)))

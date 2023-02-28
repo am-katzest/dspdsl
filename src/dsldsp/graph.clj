@@ -28,10 +28,10 @@
 (defn histogram [in]
   (let [{:keys [values imaginary]} (s/want-discrete in)
         ;; todo add an ability to crop it according to stated period
-        x (c/histogram values :nbins hist-bins)]
-    (when (imaginary)
-      (c/add-histogram x imaginary :nbins hist-bins))
-    (i/view x)))
+        ]
+    (i/view (c/histogram values :nbins hist-bins :legend true))
+    (when imaginary
+      (i/view (c/histogram imaginary :nbins hist-bins :legend true)))))
 
 (defn show
   [x]
