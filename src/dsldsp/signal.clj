@@ -64,28 +64,29 @@
 (defn discrete->pretendfancy [{:keys [sampling start duration values]}]
   {:type :fancy
    :period nil
-   :start (/ start sampling)
-   :stop (/ (+ start duration) sampling)
+   :start (* start sampling)
+   :stop (* (+ start duration) sampling)
    :fun (fn [time]
           (let [sample (int (/ (- time start) sampling))]
             (get values sample 0.0)))})
-
-(defn fancy->discrete [{:keys [fun start stop]} &
-                       {:keys [sampling]
-                        :or {sampling 1/1000}}]
-  (let [values (->> (range start stop sampling)
-                    (mapv fun))]
-    {:type :discrete
-     :sampling sampling
-     :duration (count values)
-     :start (/ start sampling)
-     :values values}))
 
 (defn want-fancy [{:keys [type] :as o}]
   (condp = type
     :fancy o
     :discrete (discrete->pretendfancy o)
     (spec->fancy o)))
+
+(defn fancy->discrete [x &
+                       {:keys [sampling]
+                        :or {sampling 1/1000}}]
+  (let [{:keys [fun start stop]} (want-fancy x)
+        values (->> (range start stop sampling)
+                    (mapv fun))]
+    {:type :discrete
+     :sampling sampling
+     :duration (count values)
+     :start (int (/ start sampling))
+     :values values}))
 
 (defn want-discrete [{:keys [type] :as o}]
   (condp = type
@@ -103,7 +104,7 @@
 
 (defn lcm [a b] (and a b (/ (* a b) (gcd a b))))
 
-(defn fop "returns fancy with values after applying operator to each set"
+(defn fop "returns fancy with values after applying operator to each set (coerces to fancy)"
   [operator & xs]
   (let [xs (mapv want-fancy xs)
         start (apply min (mapv :start xs))

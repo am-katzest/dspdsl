@@ -25,6 +25,6 @@
 
 (defn show
   [x]
-  (if (= type :discrete (:type x))
+  (if (= :discrete (:type x))
     (graph-discrete x)
     (graph-analog x)))
