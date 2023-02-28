@@ -15,8 +15,11 @@
    (s/dop max
           {:function :sin :phase 0.50}
           {:function :sin}))
+
   (g/show
    (s/fop +
           {:function :triangle :fill 0.0 :start 0 :duration 2}
           {:function :triangle :fill 0.5 :start 4 :duration 2}
-          {:function :triangle :fill 1.0 :start 8 :duration 2})))
+          {:function :triangle :fill 1.0 :start 8 :duration 2}))
+  (g/showboth (apply s/dop + (for [x (range 500)] (s/impulse-noise :p 0.5))))
+  (g/showboth (apply s/fop + (for [x (range 500)] {:function :noise}))))
