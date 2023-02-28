@@ -15,7 +15,10 @@
     :start 0
     :duration 0.1
     :fill 0.1
-    :function :square})
+    :function :square}
+  '{:type :complex
+    :real {... ..}
+    :imag {... ..}})
 ;┏━┓┏┓╻┏━┓╻  ┏━┓┏━╸
 ;┣━┫┃┗┫┣━┫┃  ┃ ┃┃╺┓
 ;╹ ╹╹ ╹╹ ╹┗━╸┗━┛┗━┛
@@ -45,7 +48,7 @@
                          start 0.
                          fill 0.5
                          phase 0.
-                         duration 10.
+                         duration 5.
                          amplitude 1.}}]
   (let [stop (+ start duration)
         base-func (functions-cont function)]
@@ -117,18 +120,22 @@
      :period period
      :fun (fn [x] (apply operator (mapv #(% x) fns)))}))
 
-(defn dop "returns fancy with values after applying operator to each set (coerces to discrete)"
+(defn dop "returns discrete with values after applying operator to each set (coerces to discrete) assumes that sampling is exactly the same"
   [operator & xs]
   (let [xs (mapv want-discrete xs)
         start (apply min (mapv :start xs))
-        stop (apply max (mapv :stop xs))
-        fns (mapv :fun xs)
-        period (->> xs (mapv :period) (reduce lcm))]
-    {:type :fancy
+        end (apply max (mapv #(+ (:start %) (:duration %)) xs))
+        val (fn [{:keys [start values]} time]
+              (get values (- time start) 0.))
+        values (mapv
+                (fn [time]
+                  (apply operator (mapv #(val % time) xs)))
+                (range start end))]
+    {:type :discrete
+     :sampling (:sampling (first xs))
      :start start
-     :stop stop
-     :period period
-     :fun (fn [x] (apply operator (mapv #(% x) fns)))}))
+     :duration (count values)
+     :values values}))
 
 ;╺┳┓╻┏━┓┏━╸┏━┓┏━╸╺┳╸┏━╸
 ; ┃┃┃┗━┓┃  ┣┳┛┣╸  ┃ ┣╸

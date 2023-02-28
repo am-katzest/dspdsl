@@ -37,5 +37,7 @@
   (if (= :discrete (:type x))
     (graph-discrete x)
     (graph-analog x))
-  (histogram x)
   nil)
+(defn showboth [x]
+  (histogram x)
+  (show x))
