@@ -9,9 +9,13 @@
           :duration :int64
           :sampling :float64
           :values (g/repeated :float64)})
+
 (g/defcodec is-complex (g/enum :byte :plain :complex))
+
 (g/defcodec plain raw)
+
 (g/defcodec complex (assoc raw :complex (g/repeated :float64)))
+
 (g/defcodec binary-schema
   (g/header
    is-complex
