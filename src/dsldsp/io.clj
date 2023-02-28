@@ -1,6 +1,7 @@
 (ns dsldsp.io
   (:require [gloss.core :as g]
             [gloss.io :as i]
+            [dsldsp.signal :as sig]
             [clojure.java.io :as io])
   (:import (java.nio ByteBuffer)))
 
@@ -24,16 +25,15 @@
 
 (defn write [f discrete]
   (with-open [fs (io/output-stream f)]
-    (i/encode-to-stream binary-schema fs [discrete])))
+    (i/encode-to-stream binary-schema fs [(sig/want-discrete discrete)])))
 
 (defn- file->bb [f]
   (with-open [fs (io/input-stream f)
               out (java.io.ByteArrayOutputStream.)]
     (io/copy fs out)
-    (.toByteArray out)))
+    (ByteBuffer/wrap (.toByteArray out))))
 
 (defn read [f]
   (->> f
        file->bb
-       ByteBuffer/wrap
        (i/decode binary-schema)))

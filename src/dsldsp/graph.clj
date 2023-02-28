@@ -8,7 +8,7 @@
 (def ^:dynamic graph-samples 2000)
 (def ^:dynamic hist-bins 20)
 
-(defn- graph-analog [x]
+(defn- graph-fancy [x]
   (let [{:keys [start stop fun]} (s/want-fancy x)
         diff (- stop start)
         margin (* diff 0.05)]
@@ -19,7 +19,7 @@
                              :step-size (/ diff graph-samples)))))
 
 (defn- graph-discrete [{:keys [start duration values sampling imaginary]}]
-  (let [x-vals (mapv #(* % sampling) (range start duration))
+  (let [x-vals (mapv #(* % sampling) (range start (+ start duration)))
         x (c/scatter-plot x-vals values)]
     (when imaginary
       (c/add-points x x-vals imaginary))
@@ -37,8 +37,9 @@
   [x]
   (if (= :discrete (:type x))
     (graph-discrete x)
-    (graph-analog x))
+    (graph-fancy x))
   nil)
+
 (defn showboth [x]
   (histogram x)
   (show x))
