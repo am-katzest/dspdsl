@@ -6,5 +6,6 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [incanter "1.9.3"]
                  [io.github.nextjournal/clerk "0.12.707"]
-                 [org.clj-commons/gloss "0.3.3"]]
+                 [org.clj-commons/gloss "0.3.3"]
+                 [better-cond "2.1.5"]]
   :repl-options {:init-ns dsldsp.core})

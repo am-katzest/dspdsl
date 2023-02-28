@@ -3,7 +3,8 @@
             [incanter.charts :as c]
             [incanter.stats :as is]
             [incanter.io :as io]
-            [dsldsp.signal :as s]))
+            [dsldsp.signal :as s]
+            [better-cond.core :as b]))
 
 (def ^:dynamic graph-samples 2000)
 (def ^:dynamic hist-bins 20)
@@ -25,13 +26,23 @@
       (c/add-points x x-vals imaginary))
     (i/view x)))
 
+(defn truncate [period sampling xs]
+  '(b/cond
+     (and period (pos? period)) xs
+     :let [samples-per-period (/ period sampling)]
+     (>= samples-per-period period) xs ;no way to fix it ¯\_(ツ)_/¯
+     :let [to-drop (rem (count xs) period)]
+     (vec (drop-last to-drop xs))))
+
 (defn histogram [in]
-  (let [{:keys [values imaginary]} (s/want-discrete in)
+  (let [{:keys [values sampling period imaginary]} (s/want-discrete in)
         ;; todo add an ability to crop it according to stated period
-        ]
-    (i/view (c/histogram values :nbins hist-bins :legend true))
+        show #(-> (truncate period sampling %)
+                  (c/histogram :nbins hist-bins :legend true)
+                  i/view)]
+    (show values)
     (when imaginary
-      (i/view (c/histogram imaginary :nbins hist-bins :legend true)))))
+      (show imaginary))))
 
 (defn show
   [x]
@@ -43,3 +54,8 @@
 (defn showboth [x]
   (histogram x)
   (show x))
+;┏┓╻┏━┓┏┓╻   ┏━╸┏━┓┏━┓┏━┓╻ ╻╻ ╻   ╺┳╸╻ ╻╻┏┓╻┏━╸┏━┓
+;┃┗┫┃ ┃┃┗┫╺━╸┃╺┓┣┳┛┣━┫┣━┛┣━┫┗┳┛    ┃ ┣━┫┃┃┗┫┃╺┓┗━┓
+;╹ ╹┗━┛╹ ╹   ┗━┛╹┗╸╹ ╹╹  ╹ ╹ ╹     ╹ ╹ ╹╹╹ ╹┗━┛┗━┛
+
+(defn stat [x])

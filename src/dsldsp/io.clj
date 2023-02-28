@@ -6,6 +6,7 @@
   (:import (java.nio ByteBuffer)))
 
 (def raw {:type :discrete
+          :period :float64
           :start :int64
           :duration :int64
           :sampling :float64

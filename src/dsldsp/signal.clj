@@ -9,13 +9,12 @@
     :start 0
     :stop 1
     :fun (fn [time] 0.0)}
-  '{:type :spec
+  '{:function :square
     :amplitude 1
-    :period 1
+    :period 1.
     :start 0
     :duration 0.1
-    :fill 0.1
-    :function :square})
+    :fill 0.1})
 ;┏━┓┏┓╻┏━┓╻  ┏━┓┏━╸
 ;┣━┫┃┗┫┣━┫┃  ┃ ┃┃╺┓
 ;╹ ╹╹ ╹╹ ╹┗━╸┗━┛┗━┛
@@ -30,18 +29,15 @@
 
 (def functions-cont
   ;; they are all normalized
-  (let [sin (fn [{:keys [angle]}] (Math/sin (* angle 2.0 Math/PI)))]
+  (let [sin (fn [{:keys [angle]}] (Math/sin (* angle 2.0 Math/PI)))
+        triangle (fn [{:keys [angle fill]}] (if (> fill angle)
+                                              (div0 angle fill)
+                                              (div0 (- 1 angle) (- 1 fill))))]
     {:noise (fn [_] (- 1 (* 2 (rand))))
      :noise-gauss (fn [_] (Normal/staticNextDouble 1.0 1.0))
      :sin sin
      :const (fn [_] 1.)
-     :triangle (fn [{:keys [angle fill]}] (if (> fill angle)
-                                           ;; zbocze narastające
-                                            (div0 angle fill)
-                                           ;; zbocze opadające
-                                            (div0 (- 1 angle) (- 1 fill))
-                                           ;; (* fill (- angle fill))
-                                            ))
+     :triangle  triangle
      :square (fn [{:keys [angle fill]}] (if (> fill angle) 1 0))
      :square-sym (fn [{:keys [angle fill]}] (if (> fill angle) 1 -1))
      :sin-half (comp max0 sin)
@@ -58,20 +54,20 @@
   (let [stop (+ start duration)
         base-func (functions-cont function)]
     {:type :fancy
-     :period (and (not (#{:jump} function)) period)
+     :period (if (#{:jump} function) 0.0 period)
      :start start
      :stop stop
      :fun (fn [time]
             (if-not (<= start time stop) 0.0
-                    (let [angle (/ (mod (- time (* period phase)) period) period)
+                    (let [angle (div0 (mod (- time (* period phase)) period) period)
                           result (base-func {:angle angle
                                              :fill fill
                                              :time time})]
                       (* result amplitude))))}))
 
-(defn discrete->pretendfancy [{:keys [sampling start duration values]}]
+(defn discrete->pretendfancy [{:keys [sampling start duration values period]}]
   {:type :fancy
-   :period nil
+   :period period
    :start (* start sampling)
    :stop (* (+ start duration) sampling)
    :fun (fn [time]
@@ -110,7 +106,9 @@
             (zero? a) b
             :else (recur (rem b a) a)))))
 
-(defn lcm [a b] (and a b (/ (* a b) (gcd a b))))
+(defn lcm [a b] (if (and (pos? a) (pos? b))
+                  (/ (* a b) (gcd a b))
+                  0.0))
 
 (defn fop "returns fancy with values after applying operator to each set (coerces to fancy)"
   [operator & xs]
