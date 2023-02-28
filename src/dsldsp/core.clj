@@ -1,7 +1,10 @@
 (ns dsldsp.core
-  (:require [dsldsp.graph :as g]
-            [dsldsp.signal :as s]))
+  (:require [dsldsp.signal :as s]
+            [dsldsp.graph :as g]))
 
-(binding [g/graph-samples 2000]
-  (g/show (s/D + (s/impulse-noise :p 0.5 :duration 10000 :A 0.1)
-               (s/impulse-noise  :sampling 1/10 :p 0.5 :duration 100 :A 1))))
+(g/show
+ (s/fop +
+        {:function :sin :amplitude 0.5}
+        {:function :square-sym :period 2 :amplitude 0.3}
+        ;; {:function :noise-gauss :amplitude 0.01}
+        ))

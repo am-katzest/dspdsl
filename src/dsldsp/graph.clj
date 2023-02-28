@@ -4,26 +4,27 @@
             [incanter.stats :as is]
             [incanter.io :as io]
             [dsldsp.signal :as s]))
+
 (def ^:dynamic graph-samples 2000)
 (def ^:dynamic hist-samples 10)
-(defn- show-graph [start stop fun]
-  (let
-   [diff (- stop start)
-    margin (* diff 0.05)]
+
+(defn- graph-analog [x]
+  (let [{:keys [start stop fun]} (s/want-fancy x)
+        diff (- stop start)
+        margin (* diff 0.05)]
     (i/view (c/function-plot fun
-                             (- start margin)
-                             (+ stop margin)
+                             ;; (- start margin)
+                             ;; (+ stop margin)
+                             start stop
                              :step-size (/ diff graph-samples))))
   nil)
 
-(defn show ([x]
-            (let [{:keys [start stop fun]} (s/want-fancy x)]
-              (show-graph start stop fun)))
-  ([x start stop]
-   (let [{:keys [fun]} (s/want-fancy x)]
-     (show-graph start stop fun)))
-  ([x _]
-   (let [{:keys [fun period start]} (s/want-fancy x)]
-     (show-graph  0 (* period 1.5) fun))))
+(defn- graph-discrete [{:keys [start duration values sampling]}]
+  (i/view (c/scatter-plot (mapv #(* % sampling) (range start duration)) values))
+  nil)
 
-(defn hist [x])
+(defn show
+  [x]
+  (if (= type :discrete (:type x))
+    (graph-discrete x)
+    (graph-analog x)))

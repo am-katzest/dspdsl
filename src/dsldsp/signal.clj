@@ -16,6 +16,9 @@
     :duration 0.1
     :fill 0.1
     :function :square})
+;┏━┓┏┓╻┏━┓╻  ┏━┓┏━╸
+;┣━┫┃┗┫┣━┫┃  ┃ ┃┃╺┓
+;╹ ╹╹ ╹╹ ╹┗━╸┗━┛┗━┛
 
 (defn max0 [x] (max x 0))
 (defn min0 [x] (min x 0))
@@ -61,18 +64,34 @@
 (defn discrete->pretendfancy [{:keys [sampling start duration values]}]
   {:type :fancy
    :period nil
-   :start start
-   :stop (+  start (* duration sampling))
+   :start (/ start sampling)
+   :stop (/ (+ start duration) sampling)
    :fun (fn [time]
           (let [sample (int (/ (- time start) sampling))]
             (get values sample 0.0)))})
 
+(defn fancy->discrete [{:keys [fun start stop]} &
+                       {:keys [sampling]
+                        :or {sampling 1/1000}}]
+  (let [values (->> (range start stop sampling)
+                    (mapv fun))]
+    {:type :discrete
+     :sampling sampling
+     :duration (count values)
+     :start (/ start sampling)
+     :values values}))
+
 (defn want-fancy [{:keys [type] :as o}]
-  ;; TODO: rewrite with mutli-methods?
   (condp = type
     :fancy o
     :discrete (discrete->pretendfancy o)
     (spec->fancy o)))
+
+(defn want-discrete [{:keys [type] :as o}]
+  (condp = type
+    :fancy (fancy->discrete o)
+    :discrete o
+    (recur (want-fancy o))))
 
 (defn gcd [a b]
   (let [scale (* (max a b) 1e-10)
@@ -84,7 +103,7 @@
 
 (defn lcm [a b] (and a b (/ (* a b) (gcd a b))))
 
-(defn D "returns fancy with values after applying operator to each set"
+(defn fop "returns fancy with values after applying operator to each set"
   [operator & xs]
   (let [xs (mapv want-fancy xs)
         start (apply min (mapv :start xs))
@@ -96,6 +115,10 @@
      :stop stop
      :period period
      :fun (fn [x] (apply operator (mapv #(% x) fns)))}))
+
+;╺┳┓╻┏━┓┏━╸┏━┓┏━╸╺┳╸┏━╸
+; ┃┃┃┗━┓┃  ┣┳┛┣╸  ┃ ┣╸
+;╺┻┛╹┗━┛┗━╸╹┗╸┗━╸ ╹ ┗━╸
 
 (defn impulse [& {:keys [sampling start duration ns A] :or
                   {sampling 1/1000 start 0 duration 1000 A 1}}]
