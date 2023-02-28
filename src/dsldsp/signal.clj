@@ -4,7 +4,7 @@
 
 (comment
   ;; signal examples, this is all docs you'll get ^w^
-  '{:type :discrete :sampling (/ 1000) :start 0 :values [0 0.1 0.3 ...]}
+  '{:type :discrete :sampling (/ 1000) :start 0 :duration 100 :values [0 0.1 0.3 ...]}
   '{:type :fancy
     :start 0
     :stop 1
@@ -58,11 +58,11 @@
                                              :time time})]
                       (* result amplitude))))}))
 
-(defn discrete->pretendfancy [{:keys [sampling start stop values]}]
+(defn discrete->pretendfancy [{:keys [sampling start duration values]}]
   {:type :fancy
    :period nil
    :start start
-   :stop stop
+   :stop (+  start (* duration sampling))
    :fun (fn [time]
           (let [sample (int (/ (- time start) sampling))]
             (get values sample 0.0)))})
@@ -99,12 +99,12 @@
 
 (defn impulse [& {:keys [sampling start duration ns A] :or
                   {sampling 1/1000 start 0 duration 1000 A 1}}]
-  {:type :discrete :sampling sampling :start start :stop (+ start (* sampling duration))
+  {:type :discrete :sampling sampling :start start :duration duration
    :values (vec (concat (repeat (- ns start) 0)
                         [A]
                         (repeat (- duration 1 ns) 0)))})
 
 (defn impulse-noise [& {:keys [sampling start duration p A] :or
                         {sampling 1/1000 start 0 duration 1000 A 1}}]
-  {:type :discrete :sampling sampling :start start :stop (+ start (* sampling duration))
+  {:type :discrete :sampling sampling :start start :duration duration
    :values (vec (repeatedly duration (fn [] (if (> (rand) p) 0 A))))})
