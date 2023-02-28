@@ -14,4 +14,17 @@
   (g/show
    (s/dop max
           {:function :sin :phase 0.50}
-          {:function :sin})))
+          {:function :sin}))
+  (g/show
+   (s/fop +
+          {:function :triangle :fill 0.0 :start 0 :duration 2}
+          {:function :triangle :fill 0.2 :start 2 :duration 2}
+          {:function :triangle :fill 0.5 :start 4 :duration 2}
+          {:function :triangle :fill 0.8 :start 6 :duration 2}
+          {:function :triangle :fill 1.0 :start 8 :duration 2})))
+
+(g/showboth
+ (s/make-complex (s/fop *
+                        {:function :triangle :fill 1.0}
+                        {:function :triangle :fill 0.0})
+                 {:function :sin-double :amplitude 0.25 :period 2}))

@@ -15,10 +15,7 @@
     :start 0
     :duration 0.1
     :fill 0.1
-    :function :square}
-  '{:type :complex
-    :real {... ..}
-    :imag {... ..}})
+    :function :square})
 ;┏━┓┏┓╻┏━┓╻  ┏━┓┏━╸
 ;┣━┫┃┗┫┣━┫┃  ┃ ┃┃╺┓
 ;╹ ╹╹ ╹╹ ╹┗━╸┗━┛┗━┛
@@ -36,7 +33,13 @@
      :noise-gauss (fn [_] (Normal/staticNextDouble 1.0 1.0))
      :sin sin
      :const (fn [_] 1.)
-     :triangle (fn [{:keys [angle fill]}] (if (> fill angle) angle 0))
+     :triangle (fn [{:keys [angle fill]}] (if (> fill angle)
+                                           ;; zbocze narastające
+                                            (div0 angle fill)
+                                           ;; zbocze opadające
+                                            (div0 (- 1 angle) (- 1 fill))
+                                           ;; (* fill (- angle fill))
+                                            ))
      :square (fn [{:keys [angle fill]}] (if (> fill angle) 1 0))
      :square-sym (fn [{:keys [angle fill]}] (if (> fill angle) 1 -1))
      :sin-half (comp max0 sin)
@@ -152,3 +155,13 @@
                         {sampling 1/1000 start 0 duration 1000 A 1}}]
   {:type :discrete :sampling sampling :start start :duration duration
    :values (vec (repeatedly duration (fn [] (if (> (rand) p) 0 A))))})
+
+;┏━╸┏━┓┏┳┓┏━┓╻  ┏━╸╻ ╻
+;┃  ┃ ┃┃┃┃┣━┛┃  ┣╸ ┏╋┛
+;┗━╸┗━┛╹ ╹╹  ┗━╸┗━╸╹ ╹
+
+(defn make-complex [a b]
+  (let [a (want-discrete a)
+        b (want-discrete b)]
+    ;; very safe, etc
+    (assoc a :imaginary (:values b))))

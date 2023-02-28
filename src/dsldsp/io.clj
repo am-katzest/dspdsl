@@ -14,13 +14,13 @@
 
 (g/defcodec plain raw)
 
-(g/defcodec complex (assoc raw :complex (g/repeated :float64)))
+(g/defcodec complex (assoc raw :imaginary (g/repeated :float64)))
 
 (g/defcodec binary-schema
   (g/header
    is-complex
    {:complex complex :plain plain}
-   #(if (:complex %) :complex :plain)))
+   #(if (:imaginary %) :complex :plain)))
 
 (defn write [f discrete]
   (with-open [fs (io/output-stream f)]

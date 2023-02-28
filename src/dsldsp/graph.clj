@@ -18,19 +18,20 @@
                              start stop
                              :step-size (/ diff graph-samples)))))
 
-(defn- graph-discrete [{:keys [start duration values sampling]}]
-  (i/view (c/scatter-plot (mapv #(* % sampling) (range start duration)) values)))
+(defn- graph-discrete [{:keys [start duration values sampling imaginary]}]
+  (let [x-vals (mapv #(* % sampling) (range start duration))
+        x (c/scatter-plot x-vals values)]
+    (when imaginary
+      (c/add-points x x-vals imaginary))
+    (i/view x)))
 
-(defn histogram [x] (let [vals (:values (s/want-discrete x))
-            ;; todo add an ability to crop it according to stated period
-                          min (apply min vals)
-                          max (apply max vals)
-                          span (- max min)
-                          bin-size (/ span hist-bins)
-                          bin #(* bin-size (int (+ 0.5 (/ % bin-size)))) ;bin to smaller
-                          fixedvals (->> vals
-                                         (map bin))]
-                      (i/view (c/histogram vals :nbins hist-bins))))
+(defn histogram [in]
+  (let [{:keys [values imaginary]} (s/want-discrete in)
+        ;; todo add an ability to crop it according to stated period
+        x (c/histogram values :nbins hist-bins)]
+    (when (imaginary)
+      (c/add-histogram x imaginary :nbins hist-bins))
+    (i/view x)))
 
 (defn show
   [x]
