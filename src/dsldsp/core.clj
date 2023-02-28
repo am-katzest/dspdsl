@@ -6,7 +6,7 @@
   ;; fourier thingy demo
   (g/show
    (apply s/fop +
-          (for [x (range 1 555 2)]
+          (for [x (range 2 555 1)]
             {:function :sin
              :duration 1
              :period (/ x)

@@ -19,7 +19,7 @@
 ;┏━┓┏┓╻┏━┓╻  ┏━┓┏━╸
 ;┣━┫┃┗┫┣━┫┃  ┃ ┃┃╺┓
 ;╹ ╹╹ ╹╹ ╹┗━╸┗━┛┗━┛
-
+(def ^:dynamic sampling-frequency 1/1000)
 (defn max0 [x] (max x 0))
 (defn min0 [x] (min x 0))
 (defn div0 [& xs]
@@ -78,7 +78,7 @@
 
 (defn fancy->discrete [x &
                        {:keys [sampling]
-                        :or {sampling 1/1000}}]
+                        :or {sampling sampling-frequency}}]
   (let [{:keys [fun start stop]} (want-fancy x)
         values (->> (range start stop sampling)
                     (mapv fun))]
@@ -107,6 +107,19 @@
 (defn fop "returns fancy with values after applying operator to each set (coerces to fancy)"
   [operator & xs]
   (let [xs (mapv want-fancy xs)
+        start (apply min (mapv :start xs))
+        stop (apply max (mapv :stop xs))
+        fns (mapv :fun xs)
+        period (->> xs (mapv :period) (reduce lcm))]
+    {:type :fancy
+     :start start
+     :stop stop
+     :period period
+     :fun (fn [x] (apply operator (mapv #(% x) fns)))}))
+
+(defn dop "returns fancy with values after applying operator to each set (coerces to discrete)"
+  [operator & xs]
+  (let [xs (mapv want-discrete xs)
         start (apply min (mapv :start xs))
         stop (apply max (mapv :stop xs))
         fns (mapv :fun xs)
