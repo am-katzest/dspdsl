@@ -27,12 +27,12 @@
     (i/view x)))
 
 (defn truncate [period sampling xs]
-  '(b/cond
-     (and period (pos? period)) xs
-     :let [samples-per-period (/ period sampling)]
-     (>= samples-per-period period) xs ;no way to fix it ¯\_(ツ)_/¯
-     :let [to-drop (rem (count xs) period)]
-     (vec (drop-last to-drop xs))))
+  (b/cond
+    (and period (pos? period)) xs
+    :let [samples-per-period (/ period sampling)]
+    (>= samples-per-period period) xs ;no way to fix it ¯\_(ツ)_/¯
+    :let [to-drop (rem (count xs) period)]
+    (vec (drop-last to-drop xs))))
 
 (defn histogram [in]
   (let [{:keys [values sampling period imaginary]} (s/want-discrete in)
