@@ -30,8 +30,8 @@
   (b/cond
     (or (nil? period) (zero? period)) xs
     :let [samples-per-period (/ period sampling)]
-    (>= samples-per-period period) xs ;no way to fix it ¯\_(ツ)_/¯
-    :let [to-drop (rem (count xs) period)]
+    (>= samples-per-period (count xs)) xs ;no way to fix it ¯\_(ツ)_/¯
+    :let [to-drop (rem (count xs) samples-per-period)]
     (vec (drop-last to-drop xs))))
 
 (defn histogram [in]

@@ -83,10 +83,11 @@
 (defn fancy->discrete [x &
                        {:keys [sampling]
                         :or {sampling sampling-frequency}}]
-  (let [{:keys [fun start stop]} (want-fancy x)
+  (let [{:keys [fun period start stop]} (want-fancy x)
         values (->> (range start stop sampling)
                     (mapv fun))]
     {:type :discrete
+     :period period
      :sampling sampling
      :duration (count values)
      :start (int (/ start sampling))
