@@ -1,6 +1,7 @@
 (ns dsldsp.signal
   (:import [cern.jet.random.tdouble Normal])
-  (:require [clojure.math]))
+  (:require [clojure.math]
+            [better-cond.core :as b]))
 
 (comment
   ;; signal examples, this is all docs you'll get ^w^
@@ -15,6 +16,13 @@
     :start 0
     :duration 0.1
     :fill 0.1})
+
+(defn graph-format [x]
+  (b/cond (string? x) :file
+          :let [t (:type x)]
+          (nil? t) :spec
+          t))
+
 ;┏━┓┏┓╻┏━┓╻  ┏━┓┏━╸
 ;┣━┫┃┗┫┣━┫┃  ┃ ┃┃╺┓
 ;╹ ╹╹ ╹╹ ╹┗━╸┗━┛┗━┛
@@ -74,11 +82,19 @@
           (let [sample (int (/ (- time start) sampling))]
             (get values sample 0.0)))})
 
-(defn want-fancy [{:keys [type] :as o}]
-  (condp = type
-    :fancy o
-    :discrete (discrete->pretendfancy o)
-    (spec->fancy o)))
+(defmulti want-fancy graph-format)
+(defmulti want-discrete graph-format)
+;; (defn want-discrete [{:keys [type] :as o}]
+;;   (condp = type
+;;     :fancy (fancy->discrete o)
+;;     :discrete o
+;;     (recur (want-fancy o))))
+
+;; (defn want-fancy [{:keys [type] :as o}]
+;;   (condp = type
+;;     :fancy o
+;;     :discrete (discrete->pretendfancy o)
+;;     (spec->fancy o)))
 
 (defn fancy->discrete [x &
                        {:keys [sampling]
@@ -92,12 +108,6 @@
      :duration (count values)
      :start (int (/ start sampling))
      :values values}))
-
-(defn want-discrete [{:keys [type] :as o}]
-  (condp = type
-    :fancy (fancy->discrete o)
-    :discrete o
-    (recur (want-fancy o))))
 
 (defn gcd [a b]
   (let [scale (* (max a b) 1e-10)
@@ -166,3 +176,14 @@
         b (want-discrete b)]
     ;; very safe, etc
     (assoc a :imaginary (:values b))))
+
+(defmethod want-fancy :default [x] (want-fancy (want-discrete x)))
+(defmethod want-discrete :default [x] (want-discrete (want-fancy x)))
+
+(defmethod want-discrete :discrete [x] x)
+(defmethod want-fancy :fancy [x] x)
+
+(defmethod want-fancy :discrete [x] (discrete->pretendfancy x))
+(defmethod want-discrete :fancy [x] (fancy->discrete x))
+
+(defmethod want-fancy :spec [x] (spec->fancy x))

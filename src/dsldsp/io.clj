@@ -1,7 +1,6 @@
 (ns dsldsp.io
   (:require [gloss.core :as g]
             [gloss.io :as i]
-            [gloss.core.structure :as s]
             [dsldsp.signal :as sig]
             [clojure.java.io :as io])
   (:import (java.nio ByteBuffer)))
@@ -50,3 +49,5 @@
   (->> f
        file->bb
        (i/decode binary-schema)))
+
+(defmethod sig/want-discrete :file [x] (read x))
