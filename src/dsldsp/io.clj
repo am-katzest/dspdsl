@@ -1,15 +1,27 @@
 (ns dsldsp.io
   (:require [gloss.core :as g]
             [gloss.io :as i]
+            [gloss.core.structure :as s]
             [dsldsp.signal :as sig]
             [clojure.java.io :as io])
   (:import (java.nio ByteBuffer)))
 
+;; format (wielce redundantny): (marnujemy 4-8 bajtów) (wszystko big-endian)
+;;; 0: bajt typu 0 - plain 1 - complex
+;;; 1-4 int32 długość (całkowita ilość próbek) (nasza)
+;;; 5-12 float64, zadeklarowany okres (do ucinania niepełnych okresów)
+;;; 13-20 float64, okres próbkowania
+;;; 21-24 int32 offset (w próbkach) początku
+
+;;; 25-28 int32, ilość próbek (formatu)
+;; cała masa float64
+;; i tutaj ewentualnie jeszcze raz to samo dla wartości urojonych
+
 (def raw {:type :discrete
+          :duration :int32
           :period :float64
-          :start :int64
-          :duration :int64
           :sampling :float64
+          :start :int32
           :values (g/repeated :float64)})
 
 (g/defcodec is-complex (g/enum :byte :plain :complex))

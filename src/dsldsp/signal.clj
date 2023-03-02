@@ -147,14 +147,14 @@
 
 (defn impulse [& {:keys [sampling start duration ns A] :or
                   {sampling 1/1000 start 0 duration 1000 A 1}}]
-  {:type :discrete :sampling sampling :start start :duration duration
-   :values (vec (concat (repeat (- ns start) 0)
+  {:type :discrete :sampling sampling :start start :duration duration :period 0.
+   :values (vec (concat (repeat (dec ns) 0)
                         [A]
                         (repeat (- duration 1 ns) 0)))})
 
 (defn impulse-noise [& {:keys [sampling start duration p A] :or
                         {sampling 1/1000 start 0 duration 1000 A 1}}]
-  {:type :discrete :sampling sampling :start start :duration duration
+  {:type :discrete :sampling sampling :start start :duration duration :period 0.
    :values (vec (repeatedly duration (fn [] (if (> (rand) p) 0 A))))})
 
 ;┏━╸┏━┓┏┳┓┏━┓╻  ┏━╸╻ ╻
