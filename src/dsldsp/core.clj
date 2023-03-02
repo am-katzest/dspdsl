@@ -18,7 +18,7 @@
    (s/make-complex (apply s/dop max
                           (for [x (range 0 1 (/ 5))]
                             {:function :sin :phase x}))
-                   (s/dop max
+                   (s/fop max
                           {:function :sin :phase 1/2}
                           {:function :sin})))
 
@@ -40,17 +40,9 @@
              (s/tshift U 1.5)
              (s/tshift U 4.5)
              (s/fop #(* % 1.6 (Math/sqrt %)) w)))))
+  (g/graph "UwU")
 
   (g/showboth (apply s/dop + (for [x (range 50)] (s/impulse-noise :p 0.5))))
 
-  (let [uwu {:function :jump
-             :start 10
-             :fill 12
-             :duration 10}]
-    (i/write "uwu" uwu)
-    (g/show uwu)
-    (g/show "uwu"))
-
   (g/histogram {:function :square :duration 1.5})
   (g/stat {:function :triangle :duration 22.1}))
-(g/graph "UwU")
