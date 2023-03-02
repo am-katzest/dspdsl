@@ -28,6 +28,11 @@
 (defmulti fancy "get graph in fancy format" get-format)
 (defmulti discrete "get graph in discrete format" get-format)
 
+(defmulti proper-signal get-format)
+(defmethod proper-signal :default [x] x)
+(defmethod proper-signal :file [x] (discrete x))
+(defmethod proper-signal :spec [x] (fancy x))
+
 (def ^:dynamic sampling-frequency 1/1000)
 
 (defn max0 [x] (max x 0))
@@ -145,9 +150,7 @@
 
 (defmulti tshift "shift signal x by t seconds" (fn [x t] (get-format x)))
 
-(defmethod tshift :file [x t] (tshift (discrete x) t))
-
-(defmethod tshift :spec [x t] (tshift (fancy x) t))
+(defmethod tshift :default [x t] (tshift (proper-signal x) t))
 
 (defmethod tshift :discrete [{:keys [start sampling] :as x} t]
   (assoc x :start (/  (+ t (* start sampling)) sampling)))
@@ -176,8 +179,8 @@
     (assoc a :imaginary (:values b))))
 
 ;; conversion magic
-(defmethod fancy :default [x] (fancy (discrete x)))
-(defmethod discrete :default [x] (discrete (fancy x)))
+(defmethod fancy :default [x] (fancy (proper-signal x)))
+(defmethod discrete :default [x] (discrete (proper-signal x)))
 
 (defmethod discrete :discrete [x] x)
 (defmethod fancy :fancy [x] x)

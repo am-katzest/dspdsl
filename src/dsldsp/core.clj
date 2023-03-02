@@ -53,4 +53,4 @@
 
   (g/histogram {:function :square :duration 1.5})
   (g/stat {:function :triangle :duration 22.1}))
-(g/show (s/fancy "UwU"))
+(g/graph "UwU")

@@ -62,12 +62,15 @@
     (when imaginary
       (show imaginary "imag")))
   (stat in))
+(defmulti graph s/get-format)
+
+(defmethod graph :default [x] (graph (s/proper-signal x)))
+(defmethod graph :discrete [x] (graph-discrete x))
+(defmethod graph :fancy [x] (graph-fancy x))
 
 (defn show
   [x]
-  (if (#{:discrete :file} (s/get-format x)) ;TODO replace with proper polimorphism
-    (graph-discrete (s/discrete x))
-    (graph-fancy (s/fancy x)))
+  (graph x)
   (stat x))
 
 (defn showboth [x]
