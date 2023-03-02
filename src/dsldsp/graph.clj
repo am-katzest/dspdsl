@@ -62,8 +62,8 @@
     (when imaginary
       (show imaginary "imag")))
   (stat in))
-(defmulti graph s/get-format)
 
+(defmulti graph s/get-format)
 (defmethod graph :default [x] (graph (s/proper-signal x)))
 (defmethod graph :discrete [x] (graph-discrete x))
 (defmethod graph :fancy [x] (graph-fancy x))

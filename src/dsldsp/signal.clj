@@ -149,7 +149,6 @@
      :values values}))
 
 (defmulti tshift "shift signal x by t seconds" (fn [x t] (get-format x)))
-
 (defmethod tshift :default [x t] (tshift (proper-signal x) t))
 
 (defmethod tshift :discrete [{:keys [start sampling] :as x} t]
@@ -179,13 +178,10 @@
     (assoc a :imaginary (:values b))))
 
 ;; conversion magic
-(defmethod fancy :default [x] (fancy (proper-signal x)))
 (defmethod discrete :default [x] (discrete (proper-signal x)))
-
 (defmethod discrete :discrete [x] x)
-(defmethod fancy :fancy [x] x)
-
-(defmethod fancy :discrete [x] (discrete->pretendfancy x))
 (defmethod discrete :fancy [x] (fancy->discrete x))
-
+(defmethod fancy :default [x] (fancy (proper-signal x)))
+(defmethod fancy :discrete [x] (discrete->pretendfancy x))
+(defmethod fancy :fancy [x] x)
 (defmethod fancy :spec [x] (spec->fancy x))
