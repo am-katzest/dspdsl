@@ -65,9 +65,9 @@
 
 (defn show
   [x]
-  (if (= :discrete (:type x))
-    (graph-discrete x)
-    (graph-fancy x))
+  (if (#{:discrete :file} (s/get-format x)) ;TODO replace with proper polimorphism
+    (graph-discrete (s/discrete x))
+    (graph-fancy (s/fancy x)))
   (stat x))
 
 (defn showboth [x]

@@ -17,7 +17,7 @@
     :duration 0.1
     :fill 0.1})
 
-(defn- get-format
+(defn get-format
   "in what format is signal stored?"
   [x]
   (b/cond (string? x) :file
@@ -85,7 +85,7 @@
    :start (* start sampling)
    :stop (* (+ start duration) sampling)
    :fun (fn [time]
-          (let [sample (int (/ (- time start) sampling))]
+          (let [sample (int (- (/ time sampling) start))]
             (get values sample 0.0)))})
 
 (defn- fancy->discrete [x &
@@ -142,6 +142,20 @@
      :start start
      :duration (count values)
      :values values}))
+
+(defmulti tshift "shift signal x by t seconds" (fn [x t] (get-format x)))
+
+(defmethod tshift :file [x t] (tshift (discrete x) t))
+
+(defmethod tshift :spec [x t] (tshift (fancy x) t))
+
+(defmethod tshift :discrete [{:keys [start sampling] :as x} t]
+  (assoc x :start (/  (+ t (* start sampling)) sampling)))
+
+(defmethod tshift :fancy [{:keys [start stop fun] :as x} t]
+  (assoc x :start (+ start t)
+         :stop (+ stop t)
+         :fun (fn [a] (fun (- a t)))))
 
 (defn impulse [& {:keys [sampling start duration ns A] :or
                   {sampling 1/1000 start 0 duration 1000 A 1}}]
