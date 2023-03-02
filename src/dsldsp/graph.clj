@@ -10,7 +10,7 @@
 (def ^:dynamic hist-bins 20)
 
 (defn- graph-fancy [x]
-  (let [{:keys [start stop fun]} (s/want-fancy x)
+  (let [{:keys [start stop fun]} (s/fancy x)
         diff (- stop start)
         margin (* diff 0.05)]
     (i/view (c/function-plot fun
@@ -35,7 +35,7 @@
     (vec (drop-last to-drop xs))))
 
 (defn histogram [in]
-  (let [{:keys [values sampling period imaginary]} (s/want-discrete in)
+  (let [{:keys [values sampling period imaginary]} (s/discrete in)
         ;; todo add an ability to crop it according to stated period
         show #(-> (truncate period sampling %)
                   (c/histogram :nbins hist-bins :legend true)
@@ -60,7 +60,7 @@
 ;╹ ╹┗━┛╹ ╹   ┗━┛╹┗╸╹ ╹╹  ╹ ╹ ╹     ╹ ╹ ╹╹╹ ╹┗━┛┗━┛
 
 (defn stat [x]
-  (let [{:keys [values imaginary sampling period]} (s/want-discrete x)
+  (let [{:keys [values imaginary sampling period]} (s/discrete x)
         calc (fn [xs] (let [xs (truncate period sampling xs)
                             time (/ (count xs)) ; TODO probably off by one
                             avg-by #(->> xs (map %) (reduce +) (* time))

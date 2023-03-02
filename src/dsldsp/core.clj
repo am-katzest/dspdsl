@@ -15,9 +15,12 @@
              :amplitude (/ x)})))
 
   (g/show
-   (s/dop max
-          {:function :sin :phase 0.50}
-          {:function :sin}))
+   (s/make-complex (apply s/dop max
+                          (for [x (range 0 1 (/ 5))]
+                            {:function :sin :phase x}))
+                   (s/dop max
+                          {:function :sin :phase 1/2}
+                          {:function :sin})))
 
   (g/show
    (s/dop +
@@ -33,7 +36,7 @@
              :duration 10}]
     (i/write "uwu" uwu)
     (g/show uwu)
-    (g/show (i/read "uwu")))
+    (g/show "uwu"))
 
   (g/histogram {:function :square :duration 1.5})
   (g/stat {:function :triangle :duration 22.1}))

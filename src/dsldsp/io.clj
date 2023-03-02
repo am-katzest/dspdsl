@@ -37,7 +37,7 @@
 
 (defn write [f discrete]
   (with-open [fs (io/output-stream f)]
-    (i/encode-to-stream binary-schema fs [(sig/want-discrete discrete)])))
+    (i/encode-to-stream binary-schema fs [(sig/discrete discrete)])))
 
 (defn- file->bb [f]
   (with-open [fs (io/input-stream f)
@@ -50,4 +50,4 @@
        file->bb
        (i/decode binary-schema)))
 
-(defmethod sig/want-discrete :file [x] (read x))
+(defmethod sig/discrete :file [x] (read x))

@@ -5,7 +5,7 @@
 
 (comment
   ;; signal examples, this is all docs you'll get ^w^
-  '{:type :discrete :sampling (/ 1000) :start 0 :duration 100 :values [0 0.1 0.3 ...]}
+  '{:type :discrete :sampling 1/1000 :start 0 :duration 2 :values [0 0.1]}
   '{:type :fancy
     :start 0
     :stop 1
@@ -17,20 +17,26 @@
     :duration 0.1
     :fill 0.1})
 
-(defn graph-format [x]
+(defn- get-format
+  "in what format is signal stored?"
+  [x]
   (b/cond (string? x) :file
           :let [t (:type x)]
           (nil? t) :spec
           t))
 
-;┏━┓┏┓╻┏━┓╻  ┏━┓┏━╸
-;┣━┫┃┗┫┣━┫┃  ┃ ┃┃╺┓
-;╹ ╹╹ ╹╹ ╹┗━╸┗━┛┗━┛
+(defmulti fancy "get graph in fancy format" get-format)
+(defmulti discrete "get graph in discrete format" get-format)
+
 (def ^:dynamic sampling-frequency 1/1000)
+
 (defn max0 [x] (max x 0))
+
 (defn min0 [x] (min x 0))
+
 (defn clamp ([m] (clamp m (- m)))
   ([m -m] (fn [x] (max -m (min m x)))))
+
 (defn div0 [& xs]
   (try (apply / xs)
        (catch java.lang.ArithmeticException _ 0)))
@@ -52,13 +58,13 @@
      :sin-double (comp abs sin)
      :jump (fn [{:keys [time fill]}] (if (> time fill) 1 0))}))
 
-(defn spec->fancy [{:keys [amplitude period start duration fill function phase]
-                    :or {period 1.
-                         start 0.
-                         fill 0.5
-                         phase 0.
-                         duration 5.
-                         amplitude 1.}}]
+(defn- spec->fancy [{:keys [amplitude period start duration fill function phase]
+                     :or {period 1.
+                          start 0.
+                          fill 0.5
+                          phase 0.
+                          duration 5.
+                          amplitude 1.}}]
   (let [stop (+ start duration)
         base-func (functions-cont function)]
     {:type :fancy
@@ -73,7 +79,7 @@
                                              :time time})]
                       (* result amplitude))))}))
 
-(defn discrete->pretendfancy [{:keys [sampling start duration values period]}]
+(defn- discrete->pretendfancy [{:keys [sampling start duration values period]}]
   {:type :fancy
    :period period
    :start (* start sampling)
@@ -82,24 +88,10 @@
           (let [sample (int (/ (- time start) sampling))]
             (get values sample 0.0)))})
 
-(defmulti want-fancy graph-format)
-(defmulti want-discrete graph-format)
-;; (defn want-discrete [{:keys [type] :as o}]
-;;   (condp = type
-;;     :fancy (fancy->discrete o)
-;;     :discrete o
-;;     (recur (want-fancy o))))
-
-;; (defn want-fancy [{:keys [type] :as o}]
-;;   (condp = type
-;;     :fancy o
-;;     :discrete (discrete->pretendfancy o)
-;;     (spec->fancy o)))
-
-(defn fancy->discrete [x &
-                       {:keys [sampling]
-                        :or {sampling sampling-frequency}}]
-  (let [{:keys [fun period start stop]} (want-fancy x)
+(defn- fancy->discrete [x &
+                        {:keys [sampling]
+                         :or {sampling sampling-frequency}}]
+  (let [{:keys [fun period start stop]} (fancy x)
         values (->> (range start stop sampling)
                     (mapv fun))]
     {:type :discrete
@@ -109,7 +101,7 @@
      :start (int (/ start sampling))
      :values values}))
 
-(defn gcd [a b]
+(defn- gcd [a b]
   (let [scale (* (max a b) 1e-10)
         zero? #(> scale (abs %))]
     (loop [a a b b]
@@ -117,13 +109,13 @@
             (zero? a) b
             :else (recur (rem b a) a)))))
 
-(defn lcm [a b] (if (and (pos? a) (pos? b))
-                  (/ (* a b) (gcd a b))
-                  0.0))
+(defn- lcm [a b] (if (and (pos? a) (pos? b))
+                   (/ (* a b) (gcd a b))
+                   0.0))
 
-(defn fop "returns fancy with values after applying operator to each set (coerces to fancy)"
+(defn fop "applies operator to values of signals at each point of time"
   [operator & xs]
-  (let [xs (mapv want-fancy xs)
+  (let [xs (mapv fancy xs)
         start (apply min (mapv :start xs))
         stop (apply max (mapv :stop xs))
         fns (mapv :fun xs)
@@ -134,9 +126,9 @@
      :period period
      :fun (fn [x] (apply operator (mapv #(% x) fns)))}))
 
-(defn dop "returns discrete with values after applying operator to each set (coerces to discrete) assumes that sampling is exactly the same"
+(defn dop "applies operator to values of signals at each point of time, assumes that sampling is exactly the same"
   [operator & xs]
-  (let [xs (mapv want-discrete xs)
+  (let [xs (mapv discrete xs)
         start (apply min (mapv :start xs))
         end (apply max (mapv #(+ (:start %) (:duration %)) xs))
         val (fn [{:keys [start values]} time]
@@ -151,10 +143,6 @@
      :duration (count values)
      :values values}))
 
-;╺┳┓╻┏━┓┏━╸┏━┓┏━╸╺┳╸┏━╸
-; ┃┃┃┗━┓┃  ┣┳┛┣╸  ┃ ┣╸
-;╺┻┛╹┗━┛┗━╸╹┗╸┗━╸ ╹ ┗━╸
-
 (defn impulse [& {:keys [sampling start duration ns A] :or
                   {sampling 1/1000 start 0 duration 1000 A 1}}]
   {:type :discrete :sampling sampling :start start :duration duration :period 0.
@@ -167,23 +155,20 @@
   {:type :discrete :sampling sampling :start start :duration duration :period 0.
    :values (vec (repeatedly duration (fn [] (if (> (rand) p) 0 A))))})
 
-;┏━╸┏━┓┏┳┓┏━┓╻  ┏━╸╻ ╻
-;┃  ┃ ┃┃┃┃┣━┛┃  ┣╸ ┏╋┛
-;┗━╸┗━┛╹ ╹╹  ┗━╸┗━╸╹ ╹
-
 (defn make-complex [a b]
-  (let [a (want-discrete a)
-        b (want-discrete b)]
+  (let [a (discrete a)
+        b (discrete b)]
     ;; very safe, etc
     (assoc a :imaginary (:values b))))
 
-(defmethod want-fancy :default [x] (want-fancy (want-discrete x)))
-(defmethod want-discrete :default [x] (want-discrete (want-fancy x)))
+;; conversion magic
+(defmethod fancy :default [x] (fancy (discrete x)))
+(defmethod discrete :default [x] (discrete (fancy x)))
 
-(defmethod want-discrete :discrete [x] x)
-(defmethod want-fancy :fancy [x] x)
+(defmethod discrete :discrete [x] x)
+(defmethod fancy :fancy [x] x)
 
-(defmethod want-fancy :discrete [x] (discrete->pretendfancy x))
-(defmethod want-discrete :fancy [x] (fancy->discrete x))
+(defmethod fancy :discrete [x] (discrete->pretendfancy x))
+(defmethod discrete :fancy [x] (fancy->discrete x))
 
-(defmethod want-fancy :spec [x] (spec->fancy x))
+(defmethod fancy :spec [x] (spec->fancy x))
