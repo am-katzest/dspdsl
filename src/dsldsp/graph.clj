@@ -34,31 +34,6 @@
     :let [to-drop (rem (count xs) samples-per-period)]
     (vec (drop-last to-drop xs))))
 
-(defn histogram [in]
-  (let [{:keys [values sampling period imaginary]} (s/discrete in)
-        ;; todo add an ability to crop it according to stated period
-        show #(-> (truncate period sampling %)
-                  (c/histogram :nbins hist-bins :legend true)
-                  i/view)]
-    (show values)
-    (when imaginary
-      (show imaginary))))
-
-(defn show
-  [x]
-  (if (= :discrete (:type x))
-    (graph-discrete x)
-    (graph-fancy x))
-  nil)
-
-(defn showboth [x]
-  (histogram x)
-  (show x))
-
-;┏┓╻┏━┓┏┓╻   ┏━╸┏━┓┏━┓┏━┓╻ ╻╻ ╻   ╺┳╸╻ ╻╻┏┓╻┏━╸┏━┓
-;┃┗┫┃ ┃┃┗┫╺━╸┃╺┓┣┳┛┣━┫┣━┛┣━┫┗┳┛    ┃ ┣━┫┃┃┗┫┃╺┓┗━┓
-;╹ ╹┗━┛╹ ╹   ┗━┛╹┗╸╹ ╹╹  ╹ ╹ ╹     ╹ ╹ ╹╹╹ ╹┗━┛┗━┛
-
 (defn stat [x]
   (let [{:keys [values imaginary sampling period]} (s/discrete x)
         calc (fn [xs] (let [xs (truncate period sampling xs)
@@ -76,3 +51,25 @@
       {:real (calc values)
        :imag (calc imaginary)}
       (calc values))))
+
+(defn histogram [in]
+  (let [{:keys [values sampling period imaginary]} (s/discrete in)
+        ;; todo add an ability to crop it according to stated period
+        show (fn [xs title] (-> (truncate period sampling xs)
+                                (c/histogram :nbins hist-bins :legend true :title title)
+                                i/view))]
+    (show values "real")
+    (when imaginary
+      (show imaginary "imag")))
+  (stat in))
+
+(defn show
+  [x]
+  (if (= :discrete (:type x))
+    (graph-discrete x)
+    (graph-fancy x))
+  (stat x))
+
+(defn showboth [x]
+  (histogram x)
+  (show x))
