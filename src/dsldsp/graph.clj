@@ -52,16 +52,38 @@
        :imag (calc imaginary)}
       (calc values))))
 
+(defn unzip [xs]
+  (let [c (count (first xs))]
+    (for [x (range c)]
+      (map #(nth % x) xs))))
+
 (defn histogram [in]
   (let [{:keys [values sampling period imaginary]} (s/discrete in)
         ;; todo add an ability to crop it according to stated period
-        show (fn [xs title] (-> (truncate period sampling xs)
-                                (c/histogram :nbins hist-bins :legend true :title title)
-                                i/view))]
-    (show values "real")
+        allvalues (concat values imaginary)
+        minv (apply min allvalues)
+        maxv (apply max allvalues)
+        diff (- maxv minv)
+        bin-size (/ diff hist-bins)
+        bin-values (fn [xs] (->>
+                             xs
+                             (truncate period sampling)
+                             (group-by #(* (Math/round (float (/ % bin-size))) bin-size))
+                             (map (fn [[x vals]]
+                                    (let [p (/ (count vals) (count xs))
+                                          hbs (/ bin-size 2.001)]
+                                      [[(- x hbs)
+                                        (+ x hbs)]
+                                       [p p]])))
+                             unzip
+                             (map (partial apply concat))))
+        [real-x real-y] (bin-values values)
+        real (c/xy-plot real-x real-y :legend true :series-label :real)]
     (when imaginary
-      (show imaginary "imag")))
-  (stat in))
+      (let [[imag-x imag-y] (bin-values imaginary)]
+        (c/add-lines real imag-x imag-y :series-label :imag)))
+    (i/view real)
+    (stat in)))
 
 (defmulti graph s/get-format)
 (defmethod graph :default [x] (graph (s/proper-signal x)))
