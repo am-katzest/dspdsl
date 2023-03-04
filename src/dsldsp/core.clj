@@ -44,5 +44,11 @@
 
   (showboth (apply dop + (for [x (range 50)] (impulse-noise :p 0.5))))
 
-  (histogram {:function :square :duration 1.5})
+  (binding [sampling-frequency 1/500]
+    (show (dop + {:function :sin :duration 0.1}
+               (impulse :ns 2)
+               (impulse :ns 4))))
+
+  (show {:function :square :duration 1.5})
+
   (stat {:function :triangle :duration 22.1}))

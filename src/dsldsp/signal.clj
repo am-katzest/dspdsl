@@ -93,9 +93,9 @@
           (let [sample (int (- (/ time sampling) start))]
             (get values sample 0.0)))})
 
-(defn- fancy->discrete [x &
-                        {:keys [sampling]
-                         :or {sampling sampling-frequency}}]
+(defn fancy->discrete [x &
+                       {:keys [sampling]
+                        :or {sampling sampling-frequency}}]
   (let [{:keys [fun period start stop]} (fancy x)
         values (->> (range start stop sampling)
                     (mapv fun))]
@@ -159,12 +159,10 @@
          :stop (+ stop t)
          :fun (fn [a] (fun (- a t)))))
 
-(defn impulse [& {:keys [sampling start duration ns A] :or
-                  {sampling 1/1000 start 0 duration 1000 A 1}}]
-  {:type :discrete :sampling sampling :start start :duration duration :period 0.
-   :values (vec (concat (repeat (dec ns) 0)
-                        [A]
-                        (repeat (- duration 1 ns) 0)))})
+(defn impulse [& {:keys [sampling ns A] :or
+                  {sampling 1/1000 ns 0 A 1}}]
+  {:type :discrete :sampling sampling :start ns
+   :duration 1 :period 0. :values [A]})
 
 (defn impulse-noise [& {:keys [sampling start duration p A] :or
                         {sampling 1/1000 start 0 duration 1000 A 1}}]
