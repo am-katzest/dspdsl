@@ -131,17 +131,30 @@
      :period period
      :fun (fn [x] (apply operator (mapv #(% x) fns)))}))
 
-(defn dop "applies operator to values of signals at each point of time, assumes that sampling is exactly the same"
+(defmulti get-sampling get-format)
+(defmethod get-sampling :default [x] nil)
+(defmethod get-sampling :discrete [x] (:sampling x))
+(defmethod get-sampling :file [x] (:sampling (discrete x)))
+
+(defn dop "applies operator to values of signals at each point of time"
   [operator & xs]
-  (let [xs (mapv discrete xs)
-        start (apply min (mapv :start xs))
-        end (apply max (mapv #(+ (:start %) (:duration %)) xs))
-        val (fn [{:keys [start values]} time]
-              (get values (- time start) 0.))
-        values (mapv
-                (fn [time]
-                  (apply operator (mapv #(val % time) xs)))
-                (range start end))]
+  (b/cond
+    :let [s (->> xs
+                 (keep get-sampling)
+                 (map float)
+                 sort
+                 dedupe)]
+    (not (#{0 1} (count s))) (throw (ex-info "different sampling frequencies!" {:freq s}))
+    :let [sf (or (first s) sampling-frequency)
+          xs (binding [sampling-frequency sf] (mapv discrete xs))
+          start (apply min (mapv :start xs))
+          end (apply max (mapv #(+ (:start %) (:duration %)) xs))
+          val (fn [{:keys [start values]} time]
+                (get values (- time start) 0.))
+          values (mapv
+                  (fn [time]
+                    (apply operator (mapv #(val % time) xs)))
+                  (range start end))]
     {:type :discrete
      :sampling (:sampling (first xs))
      :start start
@@ -160,12 +173,12 @@
          :fun (fn [a] (fun (- a t)))))
 
 (defn impulse [& {:keys [sampling ns A] :or
-                  {sampling 1/1000 ns 0 A 1}}]
+                  {sampling sampling-frequency ns 0 A 1}}]
   {:type :discrete :sampling sampling :start ns
    :duration 1 :period 0. :values [A]})
 
 (defn impulse-noise [& {:keys [sampling start duration p A] :or
-                        {sampling 1/1000 start 0 duration 1000 A 1}}]
+                        {sampling sampling-frequency start 0 duration 1000 A 1}}]
   {:type :discrete :sampling sampling :start start :duration duration :period 0.
    :values (vec (repeatedly duration (fn [] (if (> (rand) p) 0 A))))})
 
