@@ -14,7 +14,7 @@
              :period (/ x)
              :amplitude (/ x)})))
 
-  (show
+  (showboth
    (make-complex (apply dop max
                         (for [x (range 0 1 (/ 5))]
                           {:function :sin :phase x}))

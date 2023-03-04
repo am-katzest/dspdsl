@@ -65,15 +65,15 @@
         maxv (apply max allvalues)
         diff (- maxv minv)
         bin-size (/ diff hist-bins)
+        round #(* (Math/round (float (/ (+ % (/ bin-size 2)) bin-size))) bin-size)
         bin-values (fn [xs] (->>
                              xs
                              (truncate period sampling)
-                             (group-by #(* (Math/round (float (/ % bin-size))) bin-size))
+                             (group-by round)
                              (map (fn [[x vals]]
-                                    (let [p (/ (count vals) (count xs))
-                                          hbs (/ bin-size 2.001)]
-                                      [[(- x hbs)
-                                        (+ x hbs)]
+                                    (let [p (/ (count vals) (count xs))]
+                                      [[(- x (* 0.99 bin-size))
+                                        x]
                                        [p p]])))
                              unzip
                              (map (partial apply concat))))
