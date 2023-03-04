@@ -14,13 +14,15 @@
              :period (/ x)
              :amplitude (/ x)})))
 
-  (showboth
-   (make-complex (apply dop max
-                        (for [x (range 0 1 (/ 5))]
-                          {:function :sin :phase x}))
-                 (fop max
-                      {:function :sin :phase 1/2}
-                      {:function :sin})))
+  (binding [hist-bins 100
+            sampling-frequency 1/7305]
+    (histogram
+     (make-complex (apply dop max
+                          (for [x (range 0 1 (/ 5))]
+                            {:function :sin :phase x}))
+                   (fop max
+                        {:function :sin :phase 1/2}
+                        {:function :sin}))))
 
   (show
    (dop +
