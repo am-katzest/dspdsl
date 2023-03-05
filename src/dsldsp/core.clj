@@ -44,7 +44,7 @@
            (fop #(* % 1.6 (Math/sqrt %)) w)))))
   (show "UwU")
 
-  (showboth (apply dop + (for [x (range 50)] (impulse-noise :p 0.5))))
+  (histogram (apply dop + (for [x (range 50)] {:function :noise-impulse :fill 0.05})))
 
   (binding [sampling-frequency 1/500]
     (show (dop + {:function :sin :duration 0.1}

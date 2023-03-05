@@ -54,6 +54,7 @@
                                               (div0 (- 1 angle) (- 1 fill))))]
     {:noise (fn [_] (- 1 (* 2 (rand))))
      :noise-gauss (fn [_] (Normal/staticNextDouble 1.0 1.0))
+     :noise-impulse (fn [{:keys [fill]}] (if (< fill (rand)) 0.0 1.0))
      :sin sin
      :const (fn [_] 1.)
      :triangle  triangle
@@ -176,11 +177,6 @@
                   {sampling sampling-frequency ns 0 A 1}}]
   {:type :discrete :sampling sampling :start ns
    :duration 1 :period 0. :values [A]})
-
-(defn impulse-noise [& {:keys [sampling start duration p A] :or
-                        {sampling sampling-frequency start 0 duration 1000 A 1}}]
-  {:type :discrete :sampling sampling :start start :duration duration :period 0.
-   :values (vec (repeatedly duration (fn [] (if (> (rand) p) 0 A))))})
 
 (defn make-complex [a b]
   (let [a (discrete a)
