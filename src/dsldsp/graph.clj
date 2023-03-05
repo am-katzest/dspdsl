@@ -72,9 +72,13 @@
                              (group-by round)
                              (map (fn [[x vals]]
                                     (let [p (/ (count vals) (count xs))]
-                                      [[(- x (* 0.99 bin-size))
+
+                                      [[(- x (* 0.99999999 bin-size))
+                                        (- x (* 0.9999999 bin-size))
+                                        (- x (* 0.0000001 bin-size))
                                         x]
-                                       [p p]])))
+                                       [0 p p 0]])))
+                             sort
                              unzip
                              (map (partial apply concat))))
         [real-x real-y] (bin-values values)
