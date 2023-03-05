@@ -15,3 +15,9 @@ pom.xml.asc
 /.lsp/
 /doc/
 uwu
+*.pygtex
+*.aux
+*.log
+*.pdf
+/sprawko/.auctex-auto/
+/sprawko/_minted-sprawozdanie/

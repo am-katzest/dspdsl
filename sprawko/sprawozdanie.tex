@@ -1,0 +1,117 @@
+\documentclass[12pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[T1]{polski}
+\newcommand{\BibTeX}{{\sc Bib}\TeX}
+\usepackage{graphicx}
+\usepackage{amsmath} \usepackage{amssymb} \usepackage{amsfonts}
+\usepackage[utf8]{inputenc}
+\usepackage{minted}
+\newcommand{\cljt}[1]{\mintinline{clojure}{#1}}
+\usepackage{tikz-cd}
+\setlength{\textheight}{21cm}
+
+\title{{\bf Zadanie nr 1 - Generacja sygnału i szumu}\linebreak
+	Cyfrowe Przetwarzanie Sygnałów}
+\author{Jakub Mileczarek idk \and Imię Nazwisko, 236551}
+\date{2023-03-06} % jak zdążymy xd
+
+\begin{document}
+\clearpage\maketitle
+\thispagestyle{empty}
+\newpage
+\setcounter{page}{1}
+\section{Cel zadania}
+
+%Opis celu zadania (proszę nie przepisywać treści instrukcji!).\\
+%Sprawozdanie należy wykonać na podstawie\\
+%szablonu \LaTeX-owego \texttt{sprawozdanie-wzor.tex}.
+
+
+\section{Wstęp teoretyczny}
+
+%Krótki opis wykorzystywanych metod~\cite{dowolna_etykieta_artykulu}. Proszę nie umieszczać ogólnie znanych z literatury
+%wzorów oraz definicji. Należy podać jaka metoda została zastosowana, dlaczego oraz podać wykorzystaną literaturę (korzystając z odwołań do pozycji bibliografii~\cite{dowolna_etykieta_ksiazki}).\\
+%Przygotowując bibliografię należy korzystać z podanego\\
+%szablonu \BibTeX-owego \texttt{bibliografia-wzor.bib}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PODROZDZIA\xC5\x81 PT. ZALACZNIKI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Wstęp}
+zamiast programu z graficznym lub tekstowym interfejsem użytkownika zaimplementowaliśmy malutki, prosty w obsłudze język dziedzinowy.
+
+\section{implementacja}
+Program został zaimplementowany w \texttt{clojure}, funkcyjnym, lispopodobnym języku hostowanym na \texttt{JVM}.
+\subsection{reprezentacje}
+program korzysta wewnętrznie z 4 różnych reprezentacji sygnału:
+\begin{itemize}
+	\item		\cljt{:spec} \\
+	      czytelny dla człowieka słownik zawierający specyfikację, większość elementów ma dość rozsądne wartości domyślne więc może być pominięta, n.p:\\
+	      \cljt{{:function :triangle :fill 0.4 :amplitude 0.4}} \\
+	      \cljt{{:function :sin :phase 0.3 :duration 3}} \\
+	      dla wygody niektóre klucze posiadają skrócone wersje: \\
+	      \cljt{{:f :sin :A 2 :p 3 :s 2 :e 5}}
+
+	\item		\cljt{:fancy} \\
+	      reprezentacja sygnału ciągłego jako słownik zawierający informacje o początku i końcu sygnału oraz funkcję zwracającą wartość sygnału w danym czasie
+	\item		\cljt{:discrete} \\
+	      zdyskretyzowana forma sygnału, zawiera informacje o częstotliwości próbkowania, offsecie, ilości próbek, i próbki
+	\item		\cljt{:file} \\
+	      nazwa pliku zawierającego sygnał
+\end{itemize}
+funkcje do manipulacji wspierają jedynie \cljt{:discrete} i \cljt{:fancy} (nie wszystkie), inne reprezentacje są w miarę potrzeb konwertowane do którejś ze wspieranych form
+\[\begin{tikzcd}[%
+			%row sep = 20mm, column sep = 20mm, % both optional, adapt as you please
+			cells={nodes={circle}},
+			every arrow/.append style={shorten <= 1mm, shorten >= 1mm}] % both optional. Default connects the arrow directly to the circles
+		:file \arrow[shift left]{r} &
+		:discrete \arrow[shift left]{l} &
+		:fancy \arrow[shift left]{l} &
+		:spec \arrow{l} &
+	\end{tikzcd}\]
+
+
+\section{Instrukcja}
+\subsection{wprowadzanie sygnałów}
+użytkownik wprowadza sygnały (poza impulsem jednostkowym) w formie \cljt{:spec} poprzez mapę zawierającą
+chciane parametry
+\begin{itemize}
+	\item \cljt{:function}, \cljt{:fun}, \cljt{:fn}, \cljt{:f} -- jedno z słów kluczowych oznaczających funkcje
+	      \begin{itemize}
+		      \item \cljt{:sin} sinusoida
+		      \item \cljt{:sin-half} sinusoida wyprostowana jednopołówkowo
+		      \item \cljt{:sin-double} sinusoida wyprostowana dwupołuwkowo
+		      \item \cljt{:square} sygnał prostokątny (\cljt{:fill} -- stopień wypełnienia)
+		      \item \cljt{:square-sym} sygnał prostokątny symetryczny
+		      \item \cljt{:triangle} sygnał trójkątny (\cljt{:fill} -- część okresu przeznaczona na zbocze narastające)
+		      \item \cljt{:jump} skok jednostkowy (\cljt{:fill} -- czas skoku)
+		      \item \cljt{:noise} szum (-1 -- 1)
+		      \item \cljt{:noise-gauss} szum gaussowski
+		      \item \cljt{:noise-impulse} szum impulsowy (\cljt{:fill} -- prawdopodobieństwo)
+
+	      \end{itemize}
+\end{itemize}
+
+\subsection{prezentacja}
+funkcje znajdujące się w przestrzeni nazw \cljt{graph}
+\begin{itemize}
+	\item \cljt{show} -- wyświetl sygnał jako punkty lub krzywą w zależności od typu sygnału
+	\item \cljt{histogram} -- wyświetla histogram sygnału dyskretnego
+	\item \cljt{stat} -- zwraca mapę zawierającą parametry sygnału dyskretnego
+\end{itemize}
+
+\subsection{zapisywanie i wczytywanie sygnałów do pliku}
+do zapisywania sygnału do pliku służy procedura \cljt{write} biorąca dwa argumenty, nazwę pliku i sygnał;
+\cljt{(write "sygnał" {:function :sin})}
+wczytywanie odbywa się automatycznie;
+\cljt{(show (fop + "sygnał" {:function :square}))}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BIBLIOGRAFIA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\renewcommand\refname{Bibliografia}
+\bibliographystyle{plain}
+%\bibliography{bibliografia_wzor}
+
+\end{document}
