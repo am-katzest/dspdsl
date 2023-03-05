@@ -53,7 +53,7 @@
           (map (fn [[k v]] [(if (set k) name k) v])
                x)) x)
        (into {})))
-(rename-keys {:u 'nya :b :nya :other :intact} {:uwu #{:u} :buru #{:b}})
+
 (def functions-cont
   ;; they are all normalized
   (let [sin (fn [{:keys [angle]}] (Math/sin (* angle 2.0 Math/PI)))
