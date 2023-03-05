@@ -27,8 +27,8 @@
   (show
    (dop +
         {:function :triangle :fill 0.0 :start 0 :duration 2}
-        {:function :triangle :fill 0.5 :start 4 :duration 2}
-        {:function :triangle :fill 1.0 :start 8 :duration 2}))
+        {:fun :triangle :fill 0.5 :s 4 :d 2}
+        {:fun :triangle :fill 1.0 :s 8 :e 10}))
 
   (show
    ;; UwU

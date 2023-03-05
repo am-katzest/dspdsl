@@ -46,6 +46,14 @@
   (try (apply / xs)
        (catch java.lang.ArithmeticException _ 0)))
 
+(defn rename-keys [x m]
+  (->> m
+       (reduce
+        (fn [x [name set]]
+          (map (fn [[k v]] [(if (set k) name k) v])
+               x)) x)
+       (into {})))
+(rename-keys {:u 'nya :b :nya :other :intact} {:uwu #{:u} :buru #{:b}})
 (def functions-cont
   ;; they are all normalized
   (let [sin (fn [{:keys [angle]}] (Math/sin (* angle 2.0 Math/PI)))
@@ -64,14 +72,23 @@
      :sin-double (comp abs sin)
      :jump (fn [{:keys [time fill]}] (if (> time fill) 1 0))}))
 
-(defn- spec->fancy [{:keys [amplitude period start duration fill function phase]
-                     :or {period 1.
-                          start 0.
-                          fill 0.5
-                          phase 0.
-                          duration 5.
-                          amplitude 1.}}]
-  (let [stop (+ start duration)
+(def spec-shorthands {:amplitude #{:A :a :amp}
+                      :duration #{:d :l :len}
+                      :start #{:s}
+                      :end #{:e}
+                      :function #{:f :fn :fun}
+                      :period #{:p :per}
+                      :phase #{:ph}})
+
+(defn- spec->fancy [spec]
+  (let [{:keys [amplitude period start duration fill function phase end]
+         :or {period 1.
+              start 0.
+              fill 0.5
+              phase 0.
+              duration 5.
+              amplitude 1.}} (rename-keys spec spec-shorthands)
+        stop (or end (+ start duration))
         base-func (functions-cont function)]
     {:type :fancy
      :period (if (#{:jump} function) 0.0 period)
