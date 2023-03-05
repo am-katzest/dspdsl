@@ -1,6 +1,7 @@
 (ns dsldsp.signal
   (:import [cern.jet.random.tdouble Normal])
   (:require [clojure.math]
+            [complex.core :as c]
             [better-cond.core :as b]))
 
 (comment
@@ -154,30 +155,35 @@
 (defmethod get-sampling :discrete [x] (:sampling x))
 (defmethod get-sampling :file [x] (:sampling (discrete x)))
 
-(defn dop "applies operator to values of signals at each point of time"
+(defn dop "applies operator to (complex) values of signals at each point of time"
   [operator & xs]
   (b/cond
-    :let [s (->> xs
-                 (keep get-sampling)
-                 (map float)
-                 sort
-                 dedupe)]
+    :let [s (->> xs (keep get-sampling) (map float) sort dedupe)]
     (not (#{0 1} (count s))) (throw (ex-info "different sampling frequencies!" {:freq s}))
     :let [sf (or (first s) sampling-frequency)
           xs (binding [sampling-frequency sf] (mapv discrete xs))
           start (apply min (mapv :start xs))
           end (apply max (mapv #(+ (:start %) (:duration %)) xs))
-          val (fn [{:keys [start values]} time]
-                (get values (- time start) 0.))
+          get-complex (fn [{:keys [start values imaginary]} time]
+                        (c/complex (get values (- time start) 0.)
+                                   (get imaginary (- time start) 0.)))
+          get-plain (fn [{:keys [start values]} time]
+                      (get values (- time start) 0.))
+          complex (seq (filter :imaginary xs))
+          val (if complex get-complex get-plain)
           values (mapv
                   (fn [time]
                     (apply operator (mapv #(val % time) xs)))
-                  (range start end))]
-    {:type :discrete
-     :sampling (:sampling (first xs))
-     :start start
-     :duration (count values)
-     :values values}))
+                  (range start end))
+          answer {:type :discrete
+                  :sampling (:sampling (first xs))
+                  :start start
+                  :duration (count values)}]
+    complex (assoc answer
+                   :imaginary (mapv c/imaginary-part values)
+                   :values (mapv c/real-part values))
+    :else (assoc answer
+                 :values values)))
 
 (defmulti tshift "shift signal x by t seconds" (fn [x t] (get-format x)))
 (defmethod tshift :default [x t] (tshift (proper-signal x) t))
