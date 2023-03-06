@@ -21,9 +21,12 @@
 
 (defn- graph-discrete [{:keys [start duration values sampling imaginary]}]
   (let [x-vals (mapv #(* % sampling) (range start (+ start duration)))
-        x (c/scatter-plot x-vals values :series-label :real)]
+        trunc (fn [xs] (if (> graph-samples (count xs)) xs
+                           (let [ev-n (int (/ (count xs) graph-samples))]
+                             (->> xs (partition ev-n) (map first)))))
+        x (c/scatter-plot (trunc x-vals) (trunc values) :series-label :real)]
     (when imaginary
-      (c/add-points x x-vals imaginary :series-label :imaginary))
+      (c/add-points x (trunc x-vals) (trunc imaginary) :series-label :imaginary))
     (i/view x)))
 
 (defn truncate [period sampling xs]
