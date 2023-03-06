@@ -62,7 +62,7 @@
                                               (div0 angle fill)
                                               (div0 (- 1 angle) (- 1 fill))))]
     {:noise (fn [_] (- 1 (* 2 (rand))))
-     :noise-gauss (fn [_] (Normal/staticNextDouble 1.0 1.0))
+     :noise-gauss (fn [_] (Normal/staticNextDouble 0.0 1.0))
      :noise-impulse (fn [{:keys [fill]}] (if (< fill (rand)) 0.0 1.0))
      :sin sin
      :const (fn [_] 1.)
