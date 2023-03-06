@@ -35,7 +35,7 @@
     (vec (drop-last to-drop xs))))
 
 (defn stat [x]
-  (let [{:keys [values imaginary sampling period]} (s/discrete x)
+  (let [{:keys [values imaginary sampling period] :as whole} (s/discrete x)
         calc (fn [xs] (let [xs (truncate period sampling xs)
                             time (/ (count xs)) ; TODO probably off by one
                             avg-by #(->> xs (map %) (reduce +) (* time))
@@ -47,10 +47,11 @@
                          :wariancja (avg-by #(abs (- % avg)))
                          :wartość-skuteczna (Math/sqrt avg2)}))]
 
-    (if imaginary
-      {:real (calc values)
-       :imag (calc imaginary)}
-      (calc values))))
+    {:basic (dissoc whole :values :imaginary)
+     :stats (if imaginary
+              {:real (calc values)
+               :imag (calc imaginary)}
+              (calc values))}))
 
 (defn unzip [xs]
   (let [c (count (first xs))]
