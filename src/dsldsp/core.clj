@@ -57,6 +57,6 @@
 
   (let [sig (make-complex {:f :sin}
                           {:f :sin :ph 1/2})]
-    (show (dop c/* sig sig "UwU")))
+    (show (dop c/* sig sig)))
   ;;
   )
