@@ -34,7 +34,7 @@
 (defmethod proper-signal :file [x] (discrete x))
 (defmethod proper-signal :spec [x] (fancy x))
 
-(def ^:dynamic sampling-frequency 1/1000)
+(def ^:dynamic sampling-period 1/1000)
 
 (defn max0 [x] (max x 0))
 
@@ -114,7 +114,7 @@
 
 (defn fancy->discrete [x &
                        {:keys [sampling]
-                        :or {sampling sampling-frequency}}]
+                        :or {sampling sampling-period}}]
   (let [{:keys [fun period start stop]} (fancy x)
         values (->> (range start stop sampling)
                     (mapv fun))]
@@ -160,8 +160,8 @@
   (b/cond
     :let [s (->> xs (keep get-sampling) (map float) sort dedupe)]
     (not (#{0 1} (count s))) (throw (ex-info "different sampling frequencies!" {:freq s}))
-    :let [sf (or (first s) sampling-frequency)
-          xs (binding [sampling-frequency sf] (mapv discrete xs))
+    :let [sf (or (first s) sampling-period)
+          xs (binding [sampling-period sf] (mapv discrete xs))
           start (apply min (mapv :start xs))
           end (apply max (mapv #(+ (:start %) (:duration %)) xs))
           get-complex (fn [{:keys [start values imaginary]} time]
@@ -197,7 +197,7 @@
          :fun (fn [a] (fun (- a t)))))
 
 (defn impulse [& {:keys [sampling ns A] :or
-                  {sampling sampling-frequency ns 0 A 1}}]
+                  {sampling sampling-period ns 0 A 1}}]
   {:type :discrete :sampling sampling :start ns
    :duration 1 :period 0. :values [A]})
 

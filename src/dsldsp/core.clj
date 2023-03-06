@@ -16,12 +16,12 @@
              :amplitude (/ x)})))
 
   (binding [hist-bins 20
-            sampling-frequency 1/73]
+            sampling-period 1/73]
     (show
      (make-complex (apply dop max
                           (for [x (range 0 1 (/ 20))]
                             {:function :sin :phase x}))
-                   (fop max
+                   (dop max
                         {:function :sin :phase 1/2}
                         {:function :sin}))))
 
@@ -46,7 +46,7 @@
 
   (histogram (apply dop + (for [x (range 50)] {:function :noise-impulse :fill 0.05})))
 
-  (binding [sampling-frequency 1/500]
+  (binding [sampling-period 1/500]
     (show (dop + {:function :sin :duration 0.1}
                (impulse :ns 2)
                (impulse :ns 4))))
