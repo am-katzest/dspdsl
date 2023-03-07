@@ -43,6 +43,9 @@
 (defn clamp ([m] (clamp m (- m)))
   ([m -m] (fn [x] (max -m (min m x)))))
 
+(defn kwant [l]
+  (fn [x] (* (int (/ ((if (pos? x) + -) x (/ l 2)) l)) l)))
+
 (defn div0 [& xs]
   (try (apply / xs)
        (catch java.lang.ArithmeticException _ 0)))
@@ -102,28 +105,59 @@
                                              :fill fill
                                              :time time})]
                       (* result amplitude))))}))
-
-(defn- discrete->pretendfancy [{:keys [sampling start duration values period]}]
+(defn d->f-meta [{:keys [sampling start duration period]} fun]
   {:type :fancy
    :period period
    :start (* start sampling)
    :stop (* (+ start duration) sampling)
-   :fun (fn [time]
-          (let [sample (int (- (/ time sampling) start))]
-            (get values sample 0.0)))})
+   :fun fun})
+
+(defn rzędu-zerowego [{:keys [sampling start values] :as x}]
+  (d->f-meta x (fn [time]
+                 (let [sample (int (- (/ time sampling) start))]
+                   (get values sample 0.0)))))
+
+(defn lin-comb [a b c]
+  (+ (* a c)
+     (* b (- 1 c))))
+
+(defn rzędu-pierwszego [{:keys [sampling start values] :as x}]
+  (d->f-meta x (fn [time]
+                 (let [pos (- (/ time sampling) start)
+                       n (int pos)
+                       p (- pos n)]
+                   (lin-comb (get values (inc n) 0.0)
+                             (get values n 0.0)
+                             p)))))
+
+(defn sinc [x]
+  (if (zero? x) 1.
+      (/ (Math/sin (* Math/PI x)) x Math/PI)))
+
+(defn sinc-0 [x n]
+  (let [{:keys [sampling start values] :as x} (discrete x)
+        Ts sampling]
+    (d->f-meta x (fn [t]
+                   (->> (for [n (range (- n) (inc n))]
+                          (* (get values (- n start) 0.0) (sinc (- (/ t Ts) n))))
+                        (reduce +))))))
 
 (defn fancy->discrete [x &
                        {:keys [sampling]
                         :or {sampling sampling-period}}]
-  (let [{:keys [fun period start stop]} (fancy x)
+  (let [{:keys [fun complex period start stop]} (fancy x)
         values (->> (range start stop sampling)
-                    (mapv fun))]
-    {:type :discrete
-     :period period
-     :sampling sampling
-     :duration (count values)
-     :start (int (/ start sampling))
-     :values values}))
+                    (mapv fun))
+        base {:type :discrete
+              :period period
+              :sampling sampling
+              :duration (count values)
+              :start (int (/ start sampling))}]
+    (if complex
+      (assoc base
+             :values (mapv c/real-part values)
+             :imaginary (mapv c/imaginary-part values))
+      (assoc base :values values))))
 
 (defn- gcd [a b]
   (let [scale (* (max a b) 1e-10)
@@ -137,33 +171,42 @@
                    (/ (* a b) (gcd a b))
                    0.0))
 
+(defn combine-meta-fancy
+  ([a b]
+   (assoc a
+          :start (min (:start a) (:start b))
+          :stop (max (:stop a) (:stop b))
+          :period (lcm (:period a) (:period b))
+          :type :fancy))
+  ([a]
+   (reduce combine-meta-fancy a)))
+
 (defn fop "applies operator to values of signals at each point of time"
   [operator & xs]
   (let [xs (mapv fancy xs)
-        start (apply min (mapv :start xs))
-        stop (apply max (mapv :stop xs))
-        fns (mapv :fun xs)
-        period (->> xs (mapv :period) (reduce lcm))]
-    {:type :fancy
-     :start start
-     :stop stop
-     :period period
-     :fun (fn [x] (apply operator (mapv #(% x) fns)))}))
+        fns (mapv :fun xs)]
+    (assoc (combine-meta-fancy xs)
+           :fun (fn [x] (apply operator (mapv #(% x) fns))))))
 
 (defmulti get-sampling get-format)
 (defmethod get-sampling :default [x] nil)
 (defmethod get-sampling :discrete [x] (:sampling x))
 (defmethod get-sampling :file [x] (:sampling (discrete x)))
 
-(defn dop "applies operator to (complex) values of signals at each point of time"
-  [operator & xs]
+(defn fix-frequency-or-throw [xs]
   (b/cond
     :let [s (->> xs (keep get-sampling) (map float) sort dedupe)]
     (not (#{0 1} (count s))) (throw (ex-info "different sampling frequencies!" {:freq s}))
-    :let [sf (or (first s) sampling-period)
-          xs (binding [sampling-period sf] (mapv discrete xs))
+    :let [sf (or (first s) sampling-period)]
+    (binding [sampling-period sf] (mapv discrete xs))))
+
+(defn dop "applies operator to (complex) values of signals at each point of time"
+  [operator & xs]
+  (b/cond
+    :let [xs (fix-frequency-or-throw xs)
           start (apply min (mapv :start xs))
           end (apply max (mapv #(+ (:start %) (:duration %)) xs))
+          period (reduce lcm (mapv :period xs))
           get-complex (fn [{:keys [start values imaginary]} time]
                         (c/complex (get values (- time start) 0.)
                                    (get imaginary (- time start) 0.)))
@@ -178,6 +221,7 @@
           answer {:type :discrete
                   :sampling (:sampling (first xs))
                   :start start
+                  :period  period
                   :duration (count values)}]
     complex (assoc answer
                    :imaginary (mapv c/imaginary-part values)
@@ -202,16 +246,33 @@
    :duration 1 :period 0. :values [A]})
 
 (defn make-complex [a b]
-  (let [a (discrete a)
-        b (discrete b)]
-    ;; very safe, etc
-    (assoc a :imaginary (:values b))))
-
+  (let [a (proper-signal a)
+        b (proper-signal b)]
+    (if (or (= :discrete (:type a)) (= :discrete (:type b)))
+      ;; signal is discrete
+      ;; TODO add padding
+      (let [[a b] (fix-frequency-or-throw [a b])]
+        (assoc a :imaginary (:values b)))
+      ;; signal is fancy
+      (let [a (fancy a)
+            b (fancy b)
+            fa (:fun a)
+            fb (:fun b)]
+        (assoc (combine-meta-fancy a b)
+               :fun #(c/complex (fa %) (fb %))
+               :complex true)))))
+(def ^:dynamic ekstrapolator rzędu-zerowego)
 ;; conversion magic
 (defmethod discrete :default [x] (discrete (proper-signal x)))
 (defmethod discrete :discrete [x] x)
 (defmethod discrete :fancy [x] (fancy->discrete x))
 (defmethod fancy :default [x] (fancy (proper-signal x)))
-(defmethod fancy :discrete [x] (discrete->pretendfancy x))
+(defmethod fancy :discrete [x] (ekstrapolator x))
 (defmethod fancy :fancy [x] x)
 (defmethod fancy :spec [x] (spec->fancy x))
+
+(defn complex-samples [x]
+  (let [{:keys [values complex]} (discrete x)]
+    (if complex
+      (map c/complex values complex)
+      (map c/complex values))))

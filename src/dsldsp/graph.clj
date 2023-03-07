@@ -3,6 +3,7 @@
             [incanter.charts :as c]
             [incanter.stats :as is]
             [incanter.io :as io]
+            [complex.core :as cm]
             [dsldsp.signal :as s]
             [better-cond.core :as b]))
 
@@ -10,14 +11,21 @@
 (def ^:dynamic hist-bins 20)
 
 (defn- graph-fancy [x]
-  (let [{:keys [start stop fun]} (s/fancy x)
+  (let [{:keys [start stop fun complex]} (s/fancy x)
         diff (- stop start)
         margin (* diff 0.05)]
-    (i/view (c/function-plot fun
-                             ;; (- start margin)
-                             ;; (+ stop margin)
-                             start stop
-                             :step-size (/ diff graph-samples)))))
+    (i/view
+     (if complex
+       (c/add-function (c/function-plot
+                        #(cm/real-part (fun %))
+                        start stop
+                        :step-size (/ diff graph-samples)
+                        :series-label :real)
+                       #(cm/imaginary-part (fun %))
+                       start stop
+                       :step-size (/ diff graph-samples)
+                       :series-label :imag)
+       (c/function-plot fun start stop :step-size (/ diff graph-samples))))))
 
 (defn- graph-discrete [{:keys [start duration values sampling imaginary]}]
   (let [x-vals (mapv #(* % sampling) (range start (+ start duration)))
