@@ -114,3 +114,25 @@
 (defn showboth [x]
   (histogram x)
   (show x))
+
+(defn other-stat [a b]
+  (let [[a b] (s/fix-frequency-or-throw [a b])
+        sa (:start a)
+        sb (:start b)
+        start (min sa sb)
+        end (max (+ (:duration a) sa)
+                 (+ (:duration b) sb))
+        va (:values a)
+        vb (:values b)
+        count (- end start)
+        mmap (fn [f]
+               (for [x (range start end)]
+                 (f (get va (- x sa) 0.0)
+                    (get vb (- x sb) 0.0))))
+        se (reduce + (mmap #(let [x (- %2 %1)] (* x x))))
+        l10 #(* 10 (Math/log10 %))
+        mse (/ se count)]
+    {:MSE mse
+     :PSNRdb (l10 (/ (apply max va) mse))
+     :SNRdb (l10 (/ (reduce + (map #(* % %) va)) se))
+     :MD (apply max (mmap #(abs (- %1 %2))))}))
