@@ -105,6 +105,7 @@
                                              :fill fill
                                              :time time})]
                       (* result amplitude))))}))
+
 (defn d->f-meta [{:keys [sampling start duration period]} fun]
   {:type :fancy
    :period period

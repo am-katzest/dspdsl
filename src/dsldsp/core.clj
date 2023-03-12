@@ -7,14 +7,14 @@
 
 (comment
 
-  ;; fourier thingy demo
   (show
    (apply fop +
-          (for [x (range 2 600 2)]
+          (for [x (range 2 1800 4)]
             {:function :sin
              :duration 1
              :period (/ x)
              :amplitude (/ x)})))
+  ;; fourier thingy demo
 
   (binding [hist-bins 20
             sampling-period 1/73]
@@ -84,6 +84,29 @@
             (binding [sampling-period (/ n)]
               (discrete x)) (int (* n 3)))
            x)))
+  (binding [sampling-period 1/200]
+    (let [x {:f :sin :s -5 :e 5}
+          sampled (binding [sampling-period 1/6] (discrete x))
+          x (discrete x)]
+      {:0 (other-stat x (rzędu-zerowego sampled))
+       :1 (other-stat x (rzędu-pierwszego sampled))
+       :sinc (other-stat x (sinc-0 sampled 35))}))
 
+  (->> (for [[i f] (map-indexed vector [{:f :sin}
+                                        {:f :sin-half}
+                                        {:f :sin-double}
+                                        {:f :square :fill 0.1}
+                                        {:f :square}
+                                        {:f :square :fill 0.9}
+                                        {:f :triangle :fill 0.1}
+                                        {:f :triangle}
+                                        {:f :triangle :fill 0.9}
+                                        {:f :square-sym}
+                                        {:f :noise}
+                                        {:f :noise-gauss}
+                                        {:f :noise-impulse}])]
+         (assoc f :start (* i 3) :duration 2))
+       (apply fop + {:f :jump :fill 23 :s 0 :e 39 :a 4})
+       show)
   ;;
   )
