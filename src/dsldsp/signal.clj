@@ -142,6 +142,15 @@
                    (->> (for [n (range (- n) (inc n))]
                           (* (get values (- n start) 0.0) (sinc (- (/ t Ts) n))))
                         (reduce +))))))
+(defn sinc-1 [x n]
+  (let [{:keys [sampling start values] :as x} (discrete x)
+        Ts sampling]
+    (d->f-meta x (fn [t]
+                   (let [our-sample (int (/ t sampling))]
+                     (println our-sample)
+                     (->> (for [n (range (- our-sample n) (+ our-sample n))]
+                            (* (get values (- n start) 0.0) (sinc (- (/ t Ts) n))))
+                          (reduce +)))))))
 
 (defn fancy->discrete [x &
                        {:keys [sampling]
