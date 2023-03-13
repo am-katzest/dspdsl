@@ -1,4 +1,4 @@
-#.PHONY: snippets
+.PHONY: sprawko/sprawozdanie.pdf
 
 sprawko/sprawozdanie.pdf: sprawko/sprawozdanie.tex # snippets
 	cd sprawko; pdflatex -shell-escape sprawozdanie

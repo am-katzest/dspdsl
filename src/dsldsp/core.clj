@@ -9,7 +9,14 @@
 
   (show
    (apply fop +
-          (for [x (range 2 1800 4)]
+          (for [x (range 2 3000 4)]
+            {:function :sin
+             :duration 1
+             :period (/ x)
+             :amplitude (/ x)})))
+  (show
+   (apply fop +
+          (for [x (range 2 300 4)]
             {:function :sin
              :duration 1
              :period (/ x)
@@ -34,17 +41,17 @@
 
   {:basic {:type :discrete, :period 1.0, :sampling 0.05, :duration 101, :start 0}, :stats {:średnia-bezwzględna 0.6313751514675069, :średnia 3.808064974464287E-16, :moc-średnia 0.5000000000000009, :wariancja 0.6313751514675071, :wartość-skuteczna 0.7071067811865481}} (binding [sampling-period 0.05] (stat {:fun :sin}))
 
-  (show
-   ;; UwU
-   (let [v (fop -
-                {:fun :const :e 1}
-                {:fun :sin-half :period 2 :e 1})
-         U (fop * v v v)
-         w {:fun :triangle :start 2.5 :len 2}]
-     (dop max
-          (tshift U 1.5)
-          (tshift U 4.5)
-          (fop #(* % 1/3 (Math/sqrt %)) w))))
+  (binding [graph-samples 10000] (show
+    ;; UwU
+                                  (let [v (fop -
+                                               {:fun :const :e 1}
+                                               {:fun :sin-half :period 2 :e 1})
+                                        U (fop * v v v)
+                                        w (tshift {:fun :triangle :phase 0.5 :period 1/2 :len 1} 2.5)]
+                                    (dop max
+                                         (tshift U 1.5)
+                                         (tshift U 3.5)
+                                         (fop #(* % 1/3 (Math/sqrt %)) w)))))
   (show "UwU")
 
   (histogram
@@ -52,7 +59,7 @@
           (for [_ (range 500)] {:fun :noise-impulse :fill 0.5})))
 
   (binding [sampling-period 1/500]
-    (show (dop + {:function :sin :duration 0.1}
+    (show (dop + {:function :sin :duration 0.1  :amplitude 3}
                (impulse :ns 2)
                (impulse :ns 4))))
 
@@ -110,3 +117,38 @@
        show)
   ;;
   )
+(comment "sprawko 2"
+         "konwersja A/C"
+
+         (def a (fop + {:f :sin}
+                     {:f :sin :a 0.5 :period 0.5}))
+
+         (binding [sampling-period 1/100]
+           (show (discrete a)))
+
+         (binding [sampling-period 1/10]
+           (show (discrete a)))
+
+         (show (make-complex
+                a
+                (fop (kwant 0.4) a)))
+         (show (make-complex
+                a
+                (fop (kwant 0.1) a)))
+         (binding [sampling-period 1/10]
+           (show (make-complex
+                  (discrete a)
+                  (fop (kwant 0.4) a))))
+         (def both (binding [sampling-period 1/10]
+                     (discrete (fop (kwant 0.4) a))))
+
+         (def only (binding [sampling-period 1/10]
+                     (discrete a)))
+
+         (show (make-complex a (rzędu-zerowego only)))
+
+         (show (make-complex a (sinc-0 only 20)))
+
+         (show (make-complex a (sinc-0 only 80)))
+
+         (show (make-complex a (sinc-0 both 80))))
