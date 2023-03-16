@@ -135,14 +135,7 @@
   (if (zero? x) 1.
       (/ (Math/sin (* Math/PI x)) x Math/PI)))
 
-(defn sinc-0 [x n]
-  (let [{:keys [sampling start values] :as x} (discrete x)
-        Ts sampling]
-    (d->f-meta x (fn [t]
-                   (->> (for [n (range (- n) (inc n))]
-                          (* (get values (- n start) 0.0) (sinc (- (/ t Ts) n))))
-                        (reduce +))))))
-(defn sinc-1 [x n]
+(defn rzędu-sincowego [x n]
   (let [{:keys [sampling start values] :as x} (discrete x)
         Ts sampling]
     (d->f-meta x (fn [t]
