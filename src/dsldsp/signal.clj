@@ -146,9 +146,9 @@
   (let [{:keys [sampling start values] :as x} (discrete x)
         Ts sampling]
     (d->f-meta x (fn [t]
-                   (let [our-sample (int (/ t sampling))]
-                     (println our-sample)
-                     (->> (for [n (range (- our-sample n) (+ our-sample n))]
+                   (let [our-sample (int (/ t sampling))
+                         samples-to-use (range (- our-sample n -1) (+ our-sample n 1))]
+                     (->> (for [n samples-to-use]
                             (* (get values (- n start) 0.0) (sinc (- (/ t Ts) n))))
                           (reduce +)))))))
 

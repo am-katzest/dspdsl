@@ -1,5 +1,5 @@
 (ns dsldsp.core
-  (:require [dsldsp.signal :as s :refer :all]
+  (:require [dsldsp.signal :as ss :refer :all]
             [dsldsp.graph :as g :refer :all]
             [dsldsp.io :as i :refer :all]
             [complex.core :as c]))
@@ -42,7 +42,7 @@
   {:basic {:type :discrete, :period 1.0, :sampling 0.05, :duration 101, :start 0}, :stats {:średnia-bezwzględna 0.6313751514675069, :średnia 3.808064974464287E-16, :moc-średnia 0.5000000000000009, :wariancja 0.6313751514675071, :wartość-skuteczna 0.7071067811865481}} (binding [sampling-period 0.05] (stat {:fun :sin}))
 
   (binding [graph-samples 10000] (show
-    ;; UwU
+                                  ;; UwU
                                   (let [v (fop -
                                                {:fun :const :e 1}
                                                {:fun :sin-half :period 2 :e 1})
@@ -63,6 +63,13 @@
                (impulse :ns 2)
                (impulse :ns 4))))
 
+  (write "sig" {:f :sin :period 1/100 :duration 1/10})
+  (show "sig")
+  (binding [sampling-period 1/10000]
+    (write "sig2" {:period 1/20 :f :sin :duration 1/10 :A 5}))
+  (show (dop + "sig" "sig2"))
+  (show (discrete {:fun :noise-gauss}))
+  (show {:fun :noise :A 3.5})
   (show {:function :square :duration 1.5})
 
   (stat {:function :triangle :duration 22.1})
@@ -135,20 +142,34 @@
          (show (make-complex
                 a
                 (fop (kwant 0.1) a)))
-         (binding [sampling-period 1/10]
-           (show (make-complex
-                  (discrete a)
-                  (fop (kwant 0.4) a))))
+
          (def both (binding [sampling-period 1/10]
                      (discrete (fop (kwant 0.4) a))))
 
-         (def only (binding [sampling-period 1/10]
+         (def only (binding [sampling-period 1/8]
                      (discrete a)))
 
          (show (make-complex a (rzędu-zerowego only)))
 
-         (show (make-complex a (sinc-0 only 20)))
+         (show (make-complex a (rzędu-pierwszego only)))
+
+         (show (make-complex a (sinc-1 only 5)))
+
+         (show (make-complex a (sinc-1 only 10)))
+
+         (show (make-complex a (sinc-1 only 20)))
+
+         (show (make-complex a (sinc-1 only 10)))
 
          (show (make-complex a (sinc-0 only 80)))
 
-         (show (make-complex a (sinc-0 both 80))))
+         (show (make-complex a (sinc-0 both 80)))
+
+         (binding [graph-samples 2000]
+           (let [r {:f :sin :e 3}
+                 s (binding [sampling-period 1/10]
+                     (discrete r))]
+             (show (make-complex r (sinc-1 s  20)))))
+
+;;
+         )
