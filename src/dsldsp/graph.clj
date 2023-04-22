@@ -131,8 +131,10 @@
                     (get vb (- x sb) 0.0))))
         se (reduce + (mmap #(let [x (- %2 %1)] (* x x))))
         l10 #(* 10 (Math/log10 %))
-        mse (/ se count)]
+        mse (/ se count)
+        snr (l10 (/ (reduce + (map #(* % %) va)) se))]
     {:MSE mse
      :PSNRdb (l10 (/ (apply max va) mse))
-     :SNRdb (l10 (/ (reduce + (map #(* % %) va)) se))
-     :MD (apply max (mmap #(abs (- %1 %2))))}))
+     :SNRdb snr
+     :MD (apply max (mmap #(abs (- %1 %2))))
+     :ENOB (/ (- snr 1.76) 6.08)}))
