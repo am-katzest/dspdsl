@@ -2,6 +2,7 @@
   (:import [cern.jet.random.tdouble Normal])
   (:require [clojure.math]
             [complex.core :as c]
+            [dsldsp.convolution :as conv]
             [better-cond.core :as b]))
 
 (comment
@@ -135,7 +136,7 @@
   (if (zero? x) 1.
       (/ (Math/sin (* Math/PI x)) x Math/PI)))
 
-(defn rzędu-sincowego [x n]
+(defn sinc-1 [x n]
   (let [{:keys [sampling start values] :as x} (discrete x)
         Ts sampling]
     (d->f-meta x (fn [t]
@@ -279,3 +280,10 @@
     (if complex
       (map c/complex values complex)
       (map c/complex values))))
+
+(defn convolute [a b]
+  ;; does the convolution stuff
+  (let [[a b] (fix-frequency-or-throw [a b])
+        vals (conv/convolute (:values a) (:values b))
+        start (- (:start a) (:duration b))]
+    (assoc a :start start :values vals :duration (count vals))))
