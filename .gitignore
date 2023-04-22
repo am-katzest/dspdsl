@@ -21,3 +21,6 @@ uwu
 *.pdf
 /sprawko/.auctex-auto/
 /sprawko/_minted-sprawozdanie/
+*out
+*blg
+*bbl
