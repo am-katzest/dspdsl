@@ -86,11 +86,12 @@
                       :phase #{:ph}})
 
 (defn- spec->fancy [spec]
-  (let [{:keys [amplitude period start duration fill function phase end]
+  (let [{:keys [amplitude period start duration fill function phase end spread]
          :or {period 1.
               start 0.
               fill 0.5
               phase 0.
+              spread false
               duration 5.
               amplitude 1.}} (rename-keys spec spec-shorthands)
         stop (or end (+ start duration))
@@ -100,7 +101,7 @@
      :start start
      :stop stop
      :fun (fn [time]
-            (if-not (<= start time stop) 0.0
+            (if-not (or spread (<= start time stop)) 0.0
                     (let [angle (div0 (mod (- time (* period phase)) period) period)
                           result (base-func {:angle angle
                                              :fill fill
@@ -244,10 +245,14 @@
          :stop (+ stop t)
          :fun (fn [a] (fun (- a t)))))
 
-(defn impulse [& {:keys [sampling ns A] :or
-                  {sampling sampling-period ns 0 A 1}}]
+(defn impulse [& {:keys [sampling ns A len] :or
+                  {sampling sampling-period ns 0 A 1 len 1}}]
   {:type :discrete :sampling sampling :start ns
-   :duration 1 :period 0. :values [A]})
+   :duration len :period 0. :values (vec (repeat len A))})
+
+(defn pad-discrete [[a b]]
+  [(dop (fn [a _] a) a b)
+   (dop (fn [_ b] b) a b)])
 
 (defn make-complex [a b]
   (let [a (proper-signal a)
@@ -255,7 +260,7 @@
     (if (or (= :discrete (:type a)) (= :discrete (:type b)))
       ;; signal is discrete
       ;; TODO add padding
-      (let [[a b] (fix-frequency-or-throw [a b])]
+      (let [[a b] (pad-discrete (fix-frequency-or-throw [a b]))]
         (assoc a :imaginary (:values b)))
       ;; signal is fancy
       (let [a (fancy a)
@@ -265,13 +270,15 @@
         (assoc (combine-meta-fancy a b)
                :fun #(c/complex (fa %) (fb %))
                :complex true)))))
-(def ^:dynamic ekstrapolator rzędu-zerowego)
+
+(def ^:dynamic *interpolate* rzędu-pierwszego)
+
 ;; conversion magic
 (defmethod discrete :default [x] (discrete (proper-signal x)))
 (defmethod discrete :discrete [x] x)
 (defmethod discrete :fancy [x] (fancy->discrete x))
 (defmethod fancy :default [x] (fancy (proper-signal x)))
-(defmethod fancy :discrete [x] (ekstrapolator x))
+(defmethod fancy :discrete [x] (*interpolate* x))
 (defmethod fancy :fancy [x] x)
 (defmethod fancy :spec [x] (spec->fancy x))
 
@@ -282,8 +289,22 @@
       (map c/complex values))))
 
 (defn convolute [a b]
-  ;; does the convolution stuff
   (let [[a b] (fix-frequency-or-throw [a b])
         vals (conv/convolute (:values a) (:values b))
-        start (- (:start a) (:duration b))]
+        start (+ (:start a) (:start b))]
+    (println (:duration a) (:start a))
+    (println (:duration b) (:start b))
     (assoc a :start start :values vals :duration (count vals))))
+
+(defn normalize [x]
+  (let [x (discrete x)
+        vals (:values x)
+        min (apply min vals)
+        max (apply max vals)
+        span (- max min)
+        fixer (fn [x] (/ (- x min) span))]
+    (dop fixer x)))
+
+(defn  correlate [a b]
+  (let [[a b] (pad-discrete  (fix-frequency-or-throw [a b]))]
+    (convolute a b)))

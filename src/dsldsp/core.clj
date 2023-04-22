@@ -4,7 +4,7 @@
             [dsldsp.io :as i :refer :all]
             [complex.core :as c]))
 ;; fancy are a second-class citizens, everything complex is done via discrete
-
+(defn showw [a b] (show (make-complex a b)))
 (comment
 
   (show
@@ -122,5 +122,11 @@
          (assoc f :start (* i 3) :duration 2))
        (apply fop + {:f :jump :fill 23 :s 0 :e 39 :a 4})
        show)
+
+  (binding [sampling-period 1/100] (let [x (fop +  {:f :sin :spread true}
+                                                {:f :noise :A 0.1 :spread true})
+                                         n 30]
+                                     (showw x
+                                            (convolute x (impulse :A (/ n) :len n :ns (+ (/ n 2)))))))
   ;;
   )
