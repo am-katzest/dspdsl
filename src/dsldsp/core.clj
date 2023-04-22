@@ -123,10 +123,19 @@
        (apply fop + {:f :jump :fill 23 :s 0 :e 39 :a 4})
        show)
 
-  (binding [sampling-period 1/100] (let [x (fop +  {:f :sin :spread true}
-                                                {:f :noise :A 0.1 :spread true})
-                                         n 30]
-                                     (showw x
-                                            (convolute x (impulse :A (/ n) :len n :ns (+ (/ n 2)))))))
+  (binding [sampling-period 1/100]
+    (let [z (fop +  {:f :sin :spread true}
+                 {:f :sin :spread true :A 0.5 :period 1/5}
+                 {:f :noise :A 0.1 :spread true})
+          y (dop + (impulse :A 1 :ns 50) {:f :sin :A 0 :end 1})
+          x y
+          n 30
+          i1 (impulse :A (/ n) :len n :ns (- (/ n 2)))
+          i2 ()]
+      (show i2)
+      ;; (showw x
+      ;;        (convolute x  i1))
+      ))
   ;;
   )
+(make-window 6)

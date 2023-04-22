@@ -245,6 +245,23 @@
          :stop (+ stop t)
          :fun (fn [a] (fun (- a t)))))
 
+(defn hanning [M]
+  (mapv (fn [n] (- 1/2 (* 1/2 (Math/cos (* 2 Math/PI n (/ M)))))) (range (inc M))))
+
+(defn make-it-add-up-to-one [x]
+  (let [sum (reduce + x)
+        factor (/ sum)
+        fixer (fn [x] (* factor x))]
+    (mapv fixer x)))
+
+(def ^:dynamic *window* hanning)
+(defn make-window [M]
+  {:type :discrete
+   :sampling sampling-period
+   :start (int (- (/ M 2)))
+   :duration (inc M)
+   :values (make-it-add-up-to-one (*window* M))})
+
 (defn impulse [& {:keys [sampling ns A len] :or
                   {sampling sampling-period ns 0 A 1 len 1}}]
   {:type :discrete :sampling sampling :start ns
@@ -292,8 +309,6 @@
   (let [[a b] (fix-frequency-or-throw [a b])
         vals (conv/convolute (:values a) (:values b))
         start (+ (:start a) (:start b))]
-    (println (:duration a) (:start a))
-    (println (:duration b) (:start b))
     (assoc a :start start :values vals :duration (count vals))))
 
 (defn normalize [x]
