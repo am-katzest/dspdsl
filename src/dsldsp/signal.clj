@@ -245,6 +245,16 @@
          :stop (+ stop t)
          :fun (fn [a] (fun (- a t)))))
 
+(defn sin-thing [M K]
+  (mapv (fn [n]
+          (let [thing (/ (- M 1) 2)]
+            (if (= thing n) (/ 2 K)
+                (let [x (- n thing)]
+                  (/ (Math/sin (/ (* 2 Math/PI x)
+                                  K))
+                     Math/PI x)))))
+        (range M)))
+
 (defn hanning [M]
   (mapv (fn [n] (- 1/2 (* 1/2 (Math/cos (* 2 Math/PI n (/ M)))))) (range (inc M))))
 
@@ -254,13 +264,18 @@
         fixer (fn [x] (* factor x))]
     (mapv fixer x)))
 
-(def ^:dynamic *window* hanning)
-(defn make-window [M]
+(defn make-window- [coll]
   {:type :discrete
    :sampling sampling-period
-   :start (int (- (/ M 2)))
-   :duration (inc M)
-   :values (make-it-add-up-to-one (*window* M))})
+   :start (int (- (/ (count coll) 2)))
+   :duration (count coll)
+   :values coll})
+(defn make-window [coll]
+  (make-window- (make-it-add-up-to-one coll)))
+
+(defn middle-pass [window]
+  (map * window (cycle [0 1 0 -1])))
+(middle-pass [1 1 1 1 1 1 1 1 1 1])
 
 (defn impulse [& {:keys [sampling ns A len] :or
                   {sampling sampling-period ns 0 A 1 len 1}}]

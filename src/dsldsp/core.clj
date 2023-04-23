@@ -4,6 +4,7 @@
             [dsldsp.io :as i :refer :all]
             [complex.core :as c]))
 ;; fancy are a second-class citizens, everything complex is done via discrete
+(defn showf [a b] (show (make-complex (fancy a) (fancy b))))
 (defn showw [a b] (show (make-complex a b)))
 (comment
 
@@ -128,14 +129,50 @@
                  {:f :sin :spread true :A 0.5 :period 1/5}
                  {:f :noise :A 0.1 :spread true})
           y (dop + (impulse :A 1 :ns 50) {:f :sin :A 0 :end 1})
-          x y
+          x z
           n 30
           i1 (impulse :A (/ n) :len n :ns (- (/ n 2)))
-          i2 ()]
-      (show i2)
-      ;; (showw x
-      ;;        (convolute x  i1))
-      ))
+          i2 (make-window n)]
+      (showw (convolute x  i1)
+             (convolute x  i2))))
+
   ;;
   )
-(make-window 6)
+
+(comment (binding [sampling-period 1/50]
+           (let [n (dop + {:f :noise-gauss :A 0.2 :spread true})
+                 z (fop +
+                        {:f :sin :spread true :A 1 :period 5/1}
+                        {:f :sin :spread true :A 1/2 :period 5/4}
+                        {:f :sin :spread true :A 1/4 :period 5/16}
+                        {:f :sin :spread true :A 1/8 :period 5/64})
+                 nz (dop + n z)
+                 y (dop + (impulse :A 1 :ns 50) {:f :sin :A 0 :end 1})
+                 ż {:f :triangle :fill 1}
+                 n 10
+                 i1 (impulse :A (/ n) :len n :ns (- (/ n 2)))
+                 i2 (make-window (hanning n))
+                 i3 (make-window (sin-thing 10 5))
+                 i4 (make-window (middle-pass (hanning 20)))]
+             (showf z (convolute z i4)))))
+
+(binding [sampling-period 1/10]
+  (let [n (dop + {:f :noise-gauss :A 0.2 :spread true})
+        make (fn [f s] (tshift {:f :sin :spread true :A 1 :period (/ 1/10 f) :duration 10} s))
+        z (apply dop +
+                 (for [[i x] (map-indexed vector (range 1/16 1/2  1/128))]
+                   (make x (* 10 i))))
+        mask  {:fun :square :start 0 :end 200 :period 10 :fill 0.9 :phase 0.05 :spread true} ;to hide the weird things interlacing makes
+        nz (dop + n z)
+        N 3
+        i1 (make-window (repeat N N))
+        i2 (make-window (hanning N))
+        i3a (make-window (sin-thing 6 3))
+        i3aa (make-window (sin-thing 21 3))
+        i3aaa (make-window (sin-thing 60 3))
+        i3-aaa (make-window (middle-pass (sin-thing 60 3)))]
+    (showw (fop * mask  (sinc-1 z 25))
+           (fop * mask (sinc-1 (convolute z (->> (sin-thing 90 9)
+                                                 make-it-add-up-to-one
+                                                 middle-pass
+                                                 make-window-)) 25)))))

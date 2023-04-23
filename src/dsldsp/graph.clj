@@ -7,7 +7,7 @@
             [dsldsp.signal :as s]
             [better-cond.core :as b]))
 
-(def ^:dynamic graph-samples 2000)
+(def ^:dynamic graph-samples 10000)
 (def ^:dynamic hist-bins 20)
 
 (defn- graph-fancy [x]
