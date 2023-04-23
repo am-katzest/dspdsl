@@ -23,16 +23,18 @@
   "in what format is signal stored?"
   [x]
   (b/cond (string? x) :file
+          (or (vector? x) (seq? x)) :filter
           :let [t (:type x)]
           (nil? t) :spec
           t))
 
-(defmulti fancy "get graph in fancy format" get-format)
-(defmulti discrete "get graph in discrete format" get-format)
+(defmulti fancy "get graph in fancy format" (fn [x] (get-format x)))
+(defmulti discrete "get graph in discrete format" (fn [x] (get-format x)))
 
 (defmulti proper-signal get-format)
 (defmethod proper-signal :default [x] x)
 (defmethod proper-signal :file [x] (discrete x))
+(defmethod proper-signal :filter [x] (discrete x))
 (defmethod proper-signal :spec [x] (fancy x))
 
 (def ^:dynamic sampling-period 1/1000)
@@ -146,6 +148,19 @@
                      (->> (for [n samples-to-use]
                             (* (get values (- n start) 0.0) (sinc (- (/ t Ts) n))))
                           (reduce +)))))))
+(defn sinc-2 [x n]
+  (let [{:keys [sampling start values] :as x} (discrete x)
+        Ts sampling
+        vals (double-array values)
+        end (+ start  (count values))]
+    (d->f-meta x (fn [t]
+                   (let [our-sample (int (/ t sampling))
+                         s (max start (- our-sample n -1))
+                         e (min end  (+ our-sample n 1))]
+                     (loop [n s acc 0.0]
+                       (if (= n e) acc
+                           (recur (inc n)
+                                  (+ acc (* (aget vals (- n start)) (sinc (- (/ t Ts) n))))))))))))
 
 (defn fancy->discrete [x &
                        {:keys [sampling]
@@ -200,7 +215,7 @@
 
 (defn fix-frequency-or-throw [xs]
   (b/cond
-    :let [s (->> xs (keep get-sampling) (map float) sort dedupe)]
+    :let [s (->> xs (map proper-signal) (keep get-sampling) (map float) sort dedupe)]
     (not (#{0 1} (count s))) (throw (ex-info "different sampling frequencies!" {:freq s}))
     :let [sf (or (first s) sampling-period)]
     (binding [sampling-period sf] (mapv discrete xs))))
@@ -245,36 +260,56 @@
          :stop (+ stop t)
          :fun (fn [a] (fun (- a t)))))
 
-(defn sin-thing [M K]
-  (mapv (fn [n]
-          (let [thing (/ (- M 1) 2)]
-            (if (= thing n) (/ 2 K)
-                (let [x (- n thing)]
-                  (/ (Math/sin (/ (* 2 Math/PI x)
-                                  K))
-                     Math/PI x)))))
-        (range M)))
-
-(defn hanning [M]
-  (mapv (fn [n] (- 1/2 (* 1/2 (Math/cos (* 2 Math/PI n (/ M)))))) (range (inc M))))
-
 (defn make-it-add-up-to-one [x]
   (let [sum (reduce + x)
         factor (/ sum)
         fixer (fn [x] (* factor x))]
     (mapv fixer x)))
 
-(defn make-window- [coll]
+(defn make-filter [M K]
+  (->> M
+       range
+       (mapv (fn [n]
+               (let [thing (/ (- M 1) 2)
+                     x (- n thing)]
+                 (if (= thing n) (/ 2 K)
+                     (/ (Math/sin (/ (* 2 Math/PI x)
+                                     K))
+                        Math/PI x)))))
+       make-it-add-up-to-one))
+
+(defn hamming [M]
+  (mapv (fn [n] (+ 0.53836
+                   (* -0.46164 (Math/cos (* 2 Math/PI n (/ M)))))) (range M)))
+
+(defn hanning [M]
+  (mapv (fn [n] (+ 1/2
+                   (* -1/2 (Math/cos (* 2 Math/PI n (/ M)))))) (range M)))
+
+(defn blackman [M]
+  (mapv (fn [n] (+ 0.42
+                   (* -0.5 (Math/cos (* 2 Math/PI n (/ M))))
+                   (* 0.08 (Math/cos (* 4 Math/PI n (/ M)))))) (range M)))
+
+(defn  square [M]
+  (repeat M 1))
+
+(defn add-window [window signal]
+  (make-it-add-up-to-one (mapv * (window (count signal)) signal)))
+
+(defn make-window [coll]
   {:type :discrete
    :sampling sampling-period
    :start (int (- (/ (count coll) 2)))
    :duration (count coll)
    :values coll})
-(defn make-window [coll]
-  (make-window- (make-it-add-up-to-one coll)))
 
 (defn middle-pass [window]
-  (map * window (cycle [0 1 0 -1])))
+  (map * window (cycle [0 2 0 -2])))
+
+(defn lower-pass [window]
+  (map * window (cycle [1 -1])))
+
 (middle-pass [1 1 1 1 1 1 1 1 1 1])
 
 (defn impulse [& {:keys [sampling ns A len] :or
@@ -309,6 +344,7 @@
 (defmethod discrete :default [x] (discrete (proper-signal x)))
 (defmethod discrete :discrete [x] x)
 (defmethod discrete :fancy [x] (fancy->discrete x))
+(defmethod discrete :filter [x] (make-window x))
 (defmethod fancy :default [x] (fancy (proper-signal x)))
 (defmethod fancy :discrete [x] (*interpolate* x))
 (defmethod fancy :fancy [x] x)

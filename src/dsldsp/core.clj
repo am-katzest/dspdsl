@@ -4,8 +4,8 @@
             [dsldsp.io :as i :refer :all]
             [complex.core :as c]))
 ;; fancy are a second-class citizens, everything complex is done via discrete
-(defn showf [a b] (show (make-complex (fancy a) (fancy b))))
-(defn showw [a b] (show (make-complex a b)))
+(defn showf [a b] (graph (make-complex (fancy a) (fancy b))))
+(defn showw [a b] (graph (make-complex a b)))
 (comment
 
   (show
@@ -152,27 +152,22 @@
                  n 10
                  i1 (impulse :A (/ n) :len n :ns (- (/ n 2)))
                  i2 (make-window (hanning n))
-                 i3 (make-window (sin-thing 10 5))
+                 i3 (make-window (make-filter 10 5))
                  i4 (make-window (middle-pass (hanning 20)))]
              (showf z (convolute z i4)))))
 
-(binding [sampling-period 1/10]
-  (let [n (dop + {:f :noise-gauss :A 0.2 :spread true})
-        make (fn [f s] (tshift {:f :sin :spread true :A 1 :period (/ 1/10 f) :duration 10} s))
+(binding [sampling-period 1/10
+          graph-samples 8000]
+  (let [duration 20
+        cut 0.05
+        step 1/128
+        make (fn [f s] (tshift {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration} s))
         z (apply dop +
-                 (for [[i x] (map-indexed vector (range 1/16 1/2  1/128))]
-                   (make x (* 10 i))))
-        mask  {:fun :square :start 0 :end 200 :period 10 :fill 0.9 :phase 0.05 :spread true} ;to hide the weird things interlacing makes
-        nz (dop + n z)
-        N 3
-        i1 (make-window (repeat N N))
-        i2 (make-window (hanning N))
-        i3a (make-window (sin-thing 6 3))
-        i3aa (make-window (sin-thing 21 3))
-        i3aaa (make-window (sin-thing 60 3))
-        i3-aaa (make-window (middle-pass (sin-thing 60 3)))]
-    (showw (fop * mask  (sinc-1 z 25))
-           (fop * mask (sinc-1 (convolute z (->> (sin-thing 90 9)
-                                                 make-it-add-up-to-one
-                                                 middle-pass
-                                                 make-window-)) 25)))))
+                 (for [[i x] (map-indexed vector (range step 1/2  step))]
+                   (make x (* duration i))))
+                                        ;to hide the weird things interlacing makes
+        mask  {:fun :square :start 0 :end 200 :period duration :fill (- 1 cut cut) :phase cut :spread true}
+        fix #(fop * mask  (sinc-1 % 20))]
+    (show (fix (convolute z (make-filter 30 12)))
+           ;; (fix (convolute z (middle-pass (add-window hamming (make-filter 30 12)))))
+          )))
