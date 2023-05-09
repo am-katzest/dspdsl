@@ -260,6 +260,26 @@
          :stop (+ stop t)
          :fun (fn [a] (fun (- a t)))))
 
+(defmulti cut "limit signal x to between a and b seconds" (fn [x _ _] (get-format x)))
+
+(defmethod cut :default [x a b] (cut (proper-signal x) a b))
+
+(defmethod cut :fancy [{:keys [start stop fun] :as x} a b]
+  (let [s (max start a)
+        e (min  stop b)]
+    (assoc x :start s
+           :stop e
+           :fun (fn [t] (if (<= a t b) (fun t) 0)))))
+(defmethod cut :discrete [{:keys [start values duration sampling] :as x} a b]
+  (let [a (/ a sampling)
+        b (/ b sampling)
+        s (max start a)
+        e (min (+ duration start) b a)
+        values' (subvec values (- s start) (- e start))]
+    (assoc x :start s
+           :duration (count values')
+           :values values')))
+
 (defn make-it-add-up-to-one [x]
   (let [sum (reduce + x)
         factor (/ sum)

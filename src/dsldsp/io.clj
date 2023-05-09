@@ -45,9 +45,9 @@
     (io/copy fs out)
     (ByteBuffer/wrap (.toByteArray out))))
 
-(defn read [f]
+(defn load-from-file [f]
   (->> f
        file->bb
        (i/decode binary-schema)))
 
-(defmethod sig/discrete :file [x] (read x))
+(defmethod sig/discrete :file [x] (load-from-file x))

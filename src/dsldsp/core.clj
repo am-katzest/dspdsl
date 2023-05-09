@@ -40,7 +40,7 @@
         {:fun :triangle :fill 0.5 :s 4 :d 2}
         {:fun :triangle :fill 1.0 :s 8 :e 10}))
 
-  {:basic {:type :discrete, :period 1.0, :sampling 0.05, :duration 101, :start 0}, :stats {:średnia-bezwzględna 0.6313751514675069, :średnia 3.808064974464287E-16, :moc-średnia 0.5000000000000009, :wariancja 0.6313751514675071, :wartość-skuteczna 0.7071067811865481}} (binding [sampling-period 0.05] (stat {:fun :sin}))
+  (binding [sampling-period 0.05] (stat {:fun :sin}))
 
   (binding [graph-samples 10000] (show
                                   ;; UwU
@@ -128,46 +128,43 @@
     (let [z (fop +  {:f :sin :spread true}
                  {:f :sin :spread true :A 0.5 :period 1/5}
                  {:f :noise :A 0.1 :spread true})
-          y (dop + (impulse :A 1 :ns 50) {:f :sin :A 0 :end 1})
           x z
           n 30
           i1 (impulse :A (/ n) :len n :ns (- (/ n 2)))
           i2 (make-window n)]
-      (showw (convolute x  i1)
-             (convolute x  i2))))
+      (showw z z)))
 
-  ;;
+  (binding [sampling-period 1/100]
+    (let [z (fop +
+                 {:f :sin :period 1/55}
+                 {:f :sin :period 1/20}
+                 {:f :sin :period 1/5}
+                 {:f :noise :A 0.1 :spread true})]
+      (showw z (sinc-1 (convolute z (make-filter 50 20)) 20))
+      (showw z (sinc-1 (convolute z (middle-pass (make-filter 50 10))) 20))
+      (showw z (sinc-1 (convolute z (lower-pass (make-filter 50 10))) 20))))
+
+;;
   )
-
-(comment (binding [sampling-period 1/50]
-           (let [n (dop + {:f :noise-gauss :A 0.2 :spread true})
-                 z (fop +
-                        {:f :sin :spread true :A 1 :period 5/1}
-                        {:f :sin :spread true :A 1/2 :period 5/4}
-                        {:f :sin :spread true :A 1/4 :period 5/16}
-                        {:f :sin :spread true :A 1/8 :period 5/64})
-                 nz (dop + n z)
-                 y (dop + (impulse :A 1 :ns 50) {:f :sin :A 0 :end 1})
-                 ż {:f :triangle :fill 1}
-                 n 10
-                 i1 (impulse :A (/ n) :len n :ns (- (/ n 2)))
-                 i2 (make-window (hanning n))
-                 i3 (make-window (make-filter 10 5))
-                 i4 (make-window (middle-pass (hanning 20)))]
-             (showf z (convolute z i4)))))
-
-(binding [sampling-period 1/10
-          graph-samples 8000]
-  (let [duration 20
-        cut 0.05
-        step 1/128
-        make (fn [f s] (tshift {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration} s))
-        z (apply dop +
-                 (for [[i x] (map-indexed vector (range step 1/2  step))]
-                   (make x (* duration i))))
+(comment (binding [sampling-period 1/10
+                   graph-samples 8000]
+           (let [duration 20
+                 cut 0.15
+                 step 1/512
+                 make (fn [f s] (tshift {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration} s))
+                 z (apply dop +
+                          (for [[i x] (map-indexed vector (range step 1/2  step))]
+                            (make x (* duration i))))
                                         ;to hide the weird things interlacing makes
-        mask  {:fun :square :start 0 :end 200 :period duration :fill (- 1 cut cut) :phase cut :spread true}
-        fix #(fop * mask  (sinc-1 % 20))]
-    (show (fix (convolute z (make-filter 30 12)))
-           ;; (fix (convolute z (middle-pass (add-window hamming (make-filter 30 12)))))
-          )))
+                 mask  {:fun :square :start 0 :end 200 :period duration :fill (- 1 cut cut) :phase cut :spread true}
+                 fix #(fop (fn [a b] (abs (* a b))) mask  (sinc-1 % 20))]
+             (showw (fix z)
+                    (fix (convolute z (middle-pass (make-filter 128 8))))))))
+;; wyższe M po prostu poprawia jakość
+;; K:
+;; dolnoprzepustowy filtr przepuszcza częstotliwości poniżej 1/K dl FP=100Hz dla K=4 będzie przepuszczało sygnały poniżej 25HZ
+;; pasmowy filtr przepuszcza częstotliwości
+;; zawsze przepuszcza FP*4,
+;; okno skaluje się odwrotnie proporcjonalnie z K
+;; {}
+(comment (map float (map / (range 1/32 1/2  1/32))))

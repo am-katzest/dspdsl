@@ -15,6 +15,7 @@
                                               (+ acc (*
                                                       (aget H k)
                                                       (aget X (- n k)))))))))]
-    (binding [*unchecked-math* false]
+    (binding [*unchecked-math* false
+              *warn-on-reflection* true]
       (->> (range (+ M N -1))
            (mapv convolution-at-point)))))
