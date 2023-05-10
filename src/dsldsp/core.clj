@@ -169,6 +169,10 @@
 ;; {}
 (comment (map float (map / (range 1/32 1/2  1/32))))
 
+(defn- calc-delay [signal response]
+  (float (- (max-time (correlate signal signal))
+            (max-time (correlate signal response)))))
+
 ;; detector thing
 (binding [sampling-period 1/100]
   (let [s (apply fop +
@@ -178,11 +182,7 @@
         cutter #(cut % 0 1)
         sig (cutter s)
         delayed (cutter (tshift s 0.3))]
-    (show (correlate sig  sig))
-    (show (correlate sig delayed))
-    (showf sig delayed)
-    (float (- (max-time (correlate sig sig))
-              (max-time (correlate sig delayed))))))
+    (calc-delay sig delayed)))
 (comment
   ;; convolution correlation showcase
   (let [f {:fun :const :end 1}
