@@ -43,8 +43,9 @@
 
 (defn min0 [x] (min x 0))
 
-(defn clamp ([m] (clamp m (- m)))
-  ([m -m] (fn [x] (max -m (min m x)))))
+(defn clamp
+  ([m] (clamp m (- m)))
+  ([lower upper] (fn [x] (max lower (min upper x)))))
 
 (defn kwant [l]
   (fn [x] (* (int (/ ((if (pos? x) + -) x (/ l 2)) l)) l)))
@@ -264,19 +265,24 @@
 
 (defmethod cut :default [x a b] (cut (proper-signal x) a b))
 
-(defmethod cut :fancy [{:keys [start stop fun] :as x} a b]
-  (let [s (max start a)
-        e (min  stop b)]
-    (assoc x :start s
-           :stop e
-           :fun (fn [t] (if (<= a t b) (fun t) 0)))))
+(defmethod cut :fancy [{:keys [start stop fun] :as x} s e]
+  (assoc x :start s
+         :stop e
+         :fun (fn [t] (if (<= s t e) (fun t) 0))))
+
 (defmethod cut :discrete [{:keys [start values duration sampling] :as x} a b]
-  (let [a (/ a sampling)
-        b (/ b sampling)
-        s (max start a)
-        e (min (+ duration start) b a)
-        values' (subvec values (- s start) (- e start))]
-    (assoc x :start s
+  (let [start-wanted (/ a sampling)
+        end-wanted (/ b sampling)
+        end (+ start duration)
+        ;; relative values
+        es (- end-wanted start)
+        ss (- start-wanted start)
+        clamp (clamp 0 duration)
+        values' (vec (concat
+                      (repeat (- 0 ss) 0)
+                      (subvec values (clamp ss) (clamp es))
+                      (repeat (max 0 (- es duration)) 0)))]
+    (assoc x :start start-wanted
            :duration (count values')
            :values values')))
 
@@ -382,7 +388,7 @@
         start (+ (:start a) (:start b))]
     (assoc a :start start :values vals :duration (count vals))))
 
-(defn normalize [x]
+(defn- normalize [x]
   (let [x (discrete x)
         vals (:values x)
         min (apply min vals)
@@ -390,7 +396,18 @@
         span (- max min)
         fixer (fn [x] (/ (- x min) span))]
     (dop fixer x)))
-
+(defn reverse-discrete [x]
+  (update x :values #(vec (reverse %))))
 (defn  correlate [a b]
   (let [[a b] (pad-discrete  (fix-frequency-or-throw [a b]))]
-    (convolute a b)))
+    (convolute a (reverse-discrete b))))
+
+(defn- max-index [coll]
+  (->> coll
+       (map-indexed vector)
+       (sort-by second >)
+       ffirst))
+
+(defn max-time [s]
+  (let [{:keys [values sampling start]} (discrete s)]
+    (* (+ (max-index values) start) sampling)))

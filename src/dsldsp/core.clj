@@ -168,3 +168,23 @@
 ;; okno skaluje się odwrotnie proporcjonalnie z K
 ;; {}
 (comment (map float (map / (range 1/32 1/2  1/32))))
+
+;; detector thing
+(binding [sampling-period 1/100]
+  (let [s (apply fop +
+                 (for [x (range 1 30 2)]
+                   {:fun :sin :spread true :A (/ x) :period (/ x)}))
+        s (discrete {:fun :noise :start -5 :end 5})
+        cutter #(cut % 0 1)
+        sig (cutter s)
+        delayed (cutter (tshift s 0.3))]
+    (show (correlate sig  sig))
+    (show (correlate sig delayed))
+    (showf sig delayed)
+    (float (- (max-time (correlate sig sig))
+              (max-time (correlate sig delayed))))))
+(comment
+  ;; convolution correlation showcase
+  (let [f {:fun :const :end 1}
+        g {:fun :triangle :end 0.99999 :fill 0}]
+    (show (correlate g g))))
