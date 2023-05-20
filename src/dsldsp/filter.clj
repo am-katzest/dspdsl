@@ -55,11 +55,11 @@
 
 (defn middle [window] (map * window (cycle [0 2 0 -2])))
 
-(defn lower [window] (map * window (cycle [1 -1])))
+(defn upper [window] (map * window (cycle [1 -1])))
 
-(defn upper [window] window)
+(defn lower [window] window)
 
-(defn make-filter [{:keys [M K pass window] :or {pass upper window square}}]
+(defn make-filter [{:keys [M K pass window] :or {pass lower window square}}]
   (->>
    (make-sinc-filter M K)
    (add-window window)

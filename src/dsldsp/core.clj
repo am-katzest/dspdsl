@@ -143,23 +143,16 @@
                  {:f :noise :A 0.1 :spread true})]
       (showw z (sinc-1 (convolute z (make-filter {:M 50 :K 20})) 20))
       (showw z (sinc-1 (convolute z (make-filter {:M 50 :K 10 :pass middle})) 20))
-      (showw z (sinc-1 (convolute z (make-filter {:M 50 :K 10 :pass lower})) 20)))))
+      (showw z (sinc-1 (convolute z (make-filter {:M 50 :K 10 :pass upper})) 20)))))
 
 (comment
-  (binding [sampling-period 1/10
-            graph-samples 8000]
-    (let [duration 20
-          cut 0.15
-          step 1/64
-          make (fn [f s] (tshift {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration} s))
-          z (apply dop +
-                   (for [[i x] (map-indexed vector (range step 1/2  step))]
-                     (make x (* duration i))))
-                                        ;to hide the weird things interlacing makes
-          mask  {:fun :square :start 0 :end 200 :period duration :fill (- 1 cut cut) :phase cut :spread true}
-          fix #(fop (fn [a b] (abs (* a b))) mask  (sinc-1 % 20))]
-      (showw (fix z)
-             (fix (convolute z (make-filter {:M 128 :K 8 :pass middle})))))))
+  ;; showcase filters
+  (showf
+   (filter-stat 1/128 1 (make-filter {:M 32 :K 8 :pass upper :window blackman}))
+   (filter-stat 1/128 1 (make-filter {:M 64 :K 8 :pass lower})))
+  (showf
+   (filter-stat 1/128 1 (make-filter {:M 64 :K 8 :pass middle :window hanning}))
+   (filter-stat 1/128 1 (make-filter {:M 64 :K 8 :pass middle}))))
 
 ;; wyższe M po prostu poprawia jakość
 ;; K:
@@ -168,7 +161,6 @@
 ;; zawsze przepuszcza FP*4,
 ;; okno skaluje się odwrotnie proporcjonalnie z K
 ;; {}
-(comment (map float (map / (range 1/32 1/2  1/32))))
 
 (comment (defn- calc-delay [signal response]
            (float (- (max-time (correlate signal signal))
@@ -191,7 +183,3 @@
            (let [f {:fun :const :end 1}
                  g {:fun :triangle :end 0.99999 :fill 0}]
              (show (correlate g g)))))
-
-(showf
- (filter-stat 1/512 1 (make-filter {:M 128 :K 8 :pass middle :window blackman}))
- (filter-stat 1/512 1 (make-filter {:M 128 :K 8 :pass middle :window blackman2})))
