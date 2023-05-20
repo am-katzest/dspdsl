@@ -2,6 +2,7 @@
   (:require [dsldsp.signal :as ss :refer :all]
             [dsldsp.graph :as g :refer :all]
             [dsldsp.io :as i :refer :all]
+            [dsldsp.filter :as f :refer :all]
             [complex.core :as c]))
 ;; fancy are a second-class citizens, everything complex is done via discrete
 (defn showf [a b] (graph (make-complex (fancy a) (fancy b))))
@@ -160,31 +161,38 @@
                  fix #(fop (fn [a b] (abs (* a b))) mask  (sinc-1 % 20))]
              (showw (fix z)
                     (fix (convolute z (middle-pass (make-filter 128 8))))))))
+
 ;; wyższe M po prostu poprawia jakość
 ;; K:
 ;; dolnoprzepustowy filtr przepuszcza częstotliwości poniżej 1/K dl FP=100Hz dla K=4 będzie przepuszczało sygnały poniżej 25HZ
-;; pasmowy filtr przepuszcza częstotliwości
+;; pasmowy filtr pdrzepuszcza częstotliwości
 ;; zawsze przepuszcza FP*4,
 ;; okno skaluje się odwrotnie proporcjonalnie z K
 ;; {}
 (comment (map float (map / (range 1/32 1/2  1/32))))
 
-(defn- calc-delay [signal response]
-  (float (- (max-time (correlate signal signal))
-            (max-time (correlate signal response)))))
+(comment (defn- calc-delay [signal response]
+           (float (- (max-time (correlate signal signal))
+                     (max-time (correlate signal response)))))
 
-;; detector thing
-(binding [sampling-period 1/100]
-  (let [s (apply fop +
-                 (for [x (range 1 30 2)]
-                   {:fun :sin :spread true :A (/ x) :period (/ x)}))
-        s (discrete {:fun :noise :start -5 :end 5})
-        cutter #(cut % 0 1)
-        sig (cutter s)
-        delayed (cutter (tshift s 0.3))]
-    (calc-delay sig delayed)))
-(comment
-  ;; convolution correlation showcase
-  (let [f {:fun :const :end 1}
-        g {:fun :triangle :end 0.99999 :fill 0}]
-    (show (correlate g g))))
+         ;; detector thing
+         (binding [sampling-period 1/100]
+           (let [s (apply fop +
+                          (for [x (range 0.5 10 1)]
+                            {:fun :sin :spread true :A (/ x) :period (/ x) :start -5 :end 5}))
+                 ;; s (discrete {:fun :noise :start -5 :end 5})
+                 cutter #(cut % 0 1)
+                 sig (cutter s)]
+             (show (for [x (range 0 1 0.05)
+                         :let [delayed (cutter (tshift s x))]]
+                     (calc-delay sig delayed)))
+             (showf sig (cutter (tshift s 0.9)))))
+         (comment
+           ;; convolution correlation showcase
+           (let [f {:fun :const :end 1}
+                 g {:fun :triangle :end 0.99999 :fill 0}]
+             (show (correlate g g)))))
+
+;; (show (filter-stat 1/128 4))
+;; (show (convolute {:fun :sin :duration 1/10 :period 1/250}))
+;; (show (discrete))
