@@ -356,3 +356,4 @@
 (defn max-time [s]
   (let [{:keys [values sampling start]} (discrete s)]
     (* (+ (max-index values) start) sampling)))
+(show (make-filter {:M 25 :K 5}))

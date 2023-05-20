@@ -193,6 +193,6 @@
                  g {:fun :triangle :end 0.99999 :fill 0}]
              (show (correlate g g)))))
 
-;; (show (filter-stat 1/128 4))
+(show (filter-stat 1/16 4 (make-filter {:M 25 :K 5})))
 ;; (show (convolute {:fun :sin :duration 1/10 :period 1/250}))
 ;; (show (discrete))

@@ -19,6 +19,18 @@
                         Math/PI x)))))
        make-it-add-up-to-one))
 
+(defn make-filter-old [M K]
+  (->> M
+       range
+       (mapv (fn [n]
+               (let [thing (/ (- M 1) 2)
+                     x (- n thing)]
+                 (if (= thing n) (/ 2 K)
+                     (/ (Math/sin (/ (* 2 Math/PI x)
+                                     K))
+                        Math/PI x)))))
+       make-it-add-up-to-one))
+
 (defn- idk-what-it-is [n j M] (Math/cos (* j Math/PI n (/ M))))
 (defn- i-know-about-this-even-less [x1 & xs]
   (fn [M]
@@ -71,9 +83,10 @@
     (let [make (fn [f] {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration})
           fractions (range step 1/2  step) ;to hide the weird things interlacing makes
           pass #(convolute % filter)
-          results (for [x fractions
-                        :let [sig (make x)]]
-                    (/ (power (pass sig)) (power sig)))]
+          results (doall (for [x fractions
+                               :let [sig (make x)]]
+                           (/ (power (pass sig)) (power sig))))]
+      (println results)
       {:type :discrete :period 0 :sampling step :start 0 :values (vec results) :duration (count results)})))
 
 (defn filter-stat- [step duration filter]
