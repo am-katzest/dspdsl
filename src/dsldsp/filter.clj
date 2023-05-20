@@ -32,21 +32,13 @@
        make-it-add-up-to-one))
 
 (defn- idk-what-it-is [n j M] (Math/cos (* j Math/PI n (/ M))))
-(defn- i-know-about-this-even-less [x1 & xs]
+(defn- make-window-from-parameters [x1 & xs]
   (fn [M]
     (mapv (fn [n] (apply + x1 (for [[a j] xs]
                                 (* a (idk-what-it-is n j M))))) (range M))))
-(def hamming2
-  (i-know-about-this-even-less 0.53836 [-0.46164 2]))
-
-(defn hanning [M]
-  (mapv (fn [n] (+ 1/2
-                   (* -1/2 (Math/cos (* 2 Math/PI n (/ M)))))) (range M)))
-
-(defn blackman [M]
-  (mapv (fn [n] (+ 0.42
-                   (* -0.5 (Math/cos (* 2 Math/PI n (/ M))))
-                   (* 0.08 (Math/cos (* 4 Math/PI n (/ M)))))) (range M)))
+(def hamming (make-window-from-parameters 0.53836 [-0.46164 2]))
+(def hanning (make-window-from-parameters 0.5 [-0.5 2]))
+(def blackman (make-window-from-parameters 0.42 [-0.5 2] [0.08 4]))
 
 (defn  square [M]
   (repeat M 1))
@@ -74,29 +66,24 @@
    pass
    make-window))
 
-(defn power [x]
+(defn- power [x]
   (let [{:keys [values]} (discrete x)]
     (->> values (map #(* % %)) (reduce +))))
 
 (defn filter-stat [step duration filter]
-  (binding [sampling-period 1/10]
-    (let [make (fn [f] {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration})
-          fractions (range step 1/2  step) ;to hide the weird things interlacing makes
-          pass #(convolute % filter)
-          results (doall (for [x fractions
-                               :let [sig (make x)]]
-                           (/ (power (pass sig)) (power sig))))]
-      (println results)
-      {:type :discrete :period 0 :sampling step :start 0 :values (vec results) :duration (count results)})))
-
-(defn filter-stat- [step duration filter]
-  (binding [sampling-period 1/10]
-    (let [cut 0.1
-          make (fn [f] {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration})
-          fractions (range step 1/2  step) ;to hide the weird things interlacing makes
-          mask  {:fun :square :end  duration :period duration :fill (- 1 cut cut) :phase cut :spread true}
-          pass #(convolute % filter)
-          results (for [x fractions
-                        :let [sig (make x)]]
-                    (/ (power (dop * mask (pass sig))) (power (dop * mask sig))))]
-      {:type :discrete :period 0 :sampling step :start 0 :values (vec results) :duration (count results)})))
+  (let [cut 0.1
+        make (fn [f] {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration})
+        fractions (range step 1/2  step) ;to hide the weird things interlacing makes
+        mask  {:fun :square :end  duration :period duration :fill (- 1 cut cut) :phase cut :spread true}
+        pass #(convolute % filter)
+        value #(power (dop * mask %))
+        results (for [x fractions
+                      :let [sig (make x)]]
+                  (/ (value (pass sig))
+                     (value sig)))]
+    {:type :discrete
+     :period 0
+     :sampling step
+     :start 0
+     :values (vec results)
+     :duration (count results)}))
