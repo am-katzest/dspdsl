@@ -133,17 +133,7 @@
           n 30
           i1 (impulse :A (/ n) :len n :ns (- (/ n 2)))
           i2 (make-window n)]
-      (showw z z)))
-
-  (binding [sampling-period 1/100]
-    (let [z (fop +
-                 {:f :sin :period 1/55}
-                 {:f :sin :period 1/20}
-                 {:f :sin :period 1/5}
-                 {:f :noise :A 0.1 :spread true})]
-      (showw z (sinc-1 (convolute z (make-filter {:M 50 :K 20})) 20))
-      (showw z (sinc-1 (convolute z (make-filter {:M 50 :K 10 :pass middle})) 20))
-      (showw z (sinc-1 (convolute z (make-filter {:M 50 :K 10 :pass upper})) 20)))))
+      (showw z z))))
 
 (comment
   ;; showcase filters
@@ -151,8 +141,21 @@
    (filter-stat 1/128 1 (make-filter {:M 32 :K 8 :pass upper :window blackman}))
    (filter-stat 1/128 1 (make-filter {:M 64 :K 8 :pass lower})))
   (showf
-   (filter-stat 1/128 1 (make-filter {:M 64 :K 8 :pass middle :window hanning}))
-   (filter-stat 1/128 1 (make-filter {:M 64 :K 8 :pass middle}))))
+   (filter-stat 1/256 1 (make-filter {:M 64 :K 8 :pass middle :window hanning}))
+   (filter-stat 1/256 1 (make-filter {:M 64 :K 8 :pass middle})))
+  (binding [sampling-period 1/100]
+    (let [z (dop +
+                 {:f :sin :period 1/55}
+                 {:f :sin :period 1/20}
+                 {:f :sin :period 1/5}
+                 ;; {:f :noise :A 0.1 :spread true}
+                 )
+          prepare #(cut (sinc-1 % 20) 2.5 2.7)
+          filter-with #(convolute z (make-filter %))
+          compare #(showf (prepare z) (prepare (filter-with %)))]
+      (compare {:M 50 :K 20})
+      (compare {:M 50 :K 10 :pass middle})
+      (compare {:M 50 :K 10 :pass upper}))))
 
 ;; wyższe M po prostu poprawia jakość
 ;; K:
