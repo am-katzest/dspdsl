@@ -174,15 +174,17 @@
            (let [s (apply fop +
                           (for [x (range 0.5 10 1)]
                             {:fun :sin :spread true :A (/ x) :period (/ x) :start -5 :end 5}))
-                 ;; s (discrete {:fun :noise :start -5 :end 5})
+                 s (discrete {:fun :noise :start 0 :end 0.1})
+                 s (discrete {:fun :sin :period 1/2 :start -5 :end 5})
                  cutter #(cut % 0 1)
                  sig (cutter s)]
-             (show (for [x (range 0 1 0.05)
-                         :let [delayed (cutter (tshift s x))]]
-                     (calc-delay sig delayed)))
+             (show (wrap-discrete
+                    (for [x (range 0 1 0.05)
+                          :let [delayed (cutter (tshift s x))]]
+                      (calc-delay sig delayed))))
              (showf sig (cutter (tshift s 0.9)))))
          (comment
            ;; convolution correlation showcase
            (let [f {:fun :const :end 1}
                  g {:fun :triangle :end 0.99999 :fill 0}]
-             (show (correlate g g)))))
+             (show (correlate g f)))))

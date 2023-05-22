@@ -356,3 +356,5 @@
 (defn max-time [s]
   (let [{:keys [values sampling start]} (discrete s)]
     (* (+ (max-index values) start) sampling)))
+
+(defn wrap-discrete [xs] {:type :discrete :start 0 :sampling sampling-period :duration (count xs) :values xs})
