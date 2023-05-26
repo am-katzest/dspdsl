@@ -143,6 +143,10 @@
   (showf
    (filter-stat 1/256 1 (make-filter {:M 64 :K 8 :pass middle :window hanning}))
    (filter-stat 1/256 1 (make-filter {:M 64 :K 8 :pass middle})))
+  (showf (filter-stat 1/128 1 (convolute (make-filter {:M 40 :K 2 :pass lower :window hanning})
+                                         (make-filter {:M 40 :K 8 :pass middle :window hanning})))
+         (filter-stat 1/128 1 (convolute (make-filter {:M 40 :K 4 :pass lower})
+                                         (make-filter {:M 40 :K 4 :pass middle}))))
   (binding [sampling-period 1/100]
     (let [z (dop +
                  {:f :sin :period 1/55}
