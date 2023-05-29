@@ -83,7 +83,18 @@
                      (value sig)))]
     {:type :discrete
      :period 0
-     :sampling step
+     :sampling (/ step sampling-period)
      :start 0
      :values (vec results)
      :duration (count results)}))
+(defn make-lower-pass-filter [base cutoff-frequency]
+  (make-filter (assoc base  :pass lower :K (/ 1 sampling-period cutoff-frequency))))
+(defn make-upper-pass-filter [base cutoff-frequency]
+  (let [bf (/ 1 sampling-period 2)
+        diff (- bf cutoff-frequency)
+        K (* 2 (/ bf diff))]
+    (make-filter  (assoc base :pass upper :K K))))
+(defn make-pass-filter [base upper lower]
+  (convolute
+   (make-lower-pass-filter base lower)
+   (make-upper-pass-filter base upper)))

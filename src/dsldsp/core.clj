@@ -143,9 +143,16 @@
   (showf
    (filter-stat 1/256 1 (make-filter {:M 64 :K 8 :pass middle :window hanning}))
    (filter-stat 1/256 1 (make-filter {:M 64 :K 8 :pass middle})))
-  (showf (filter-stat 1/128 1 (convolute (make-filter {:M 40 :K 2 :pass lower :window hanning})
-                                         (make-filter {:M 40 :K 8 :pass middle :window hanning})))
+  (showf
+   (filter-stat 1/256 1 (make-filter {:M 20 :K 8 :pass middle :window hanning}))
+   (filter-stat 1/256 1 (make-filter {:M 20 :K 8 :pass middle})))
+  (showf (filter-stat 1/128 1 (convolute (make-filter {:M 40 :K 3 :pass lower :window hanning})
+                                         (make-filter {:M 40 :K 4 :pass middle :window hanning})))
          (filter-stat 1/128 1 (convolute (make-filter {:M 40 :K 4 :pass lower})
+                                         (make-filter {:M 40 :K 4 :pass middle}))))
+  (showf (filter-stat 1/256 1 (convolute (make-filter {:M 40 :K 2 :pass lower :window hanning})
+                                         (make-filter {:M 40 :K 2 :pass upper})))
+         (filter-stat 1/256 1 (convolute (make-filter {:M 40 :K 4 :pass middle})
                                          (make-filter {:M 40 :K 4 :pass middle}))))
   (binding [sampling-period 1/100]
     (let [z (dop +
@@ -157,9 +164,23 @@
           prepare #(cut (sinc-1 % 20) 2.5 2.7)
           filter-with #(convolute z (make-filter %))
           compare #(showf (prepare z) (prepare (filter-with %)))]
-      (compare {:M 50 :K 20})
-      (compare {:M 50 :K 10 :pass middle})
-      (compare {:M 50 :K 10 :pass upper}))))
+      (compare {:M 40 :K 10})
+      (compare {:M 40 :K 10 :pass middle})
+      (compare {:M 40 :K 10 :pass upper})))
+  (binding [sampling-period 1/100]
+    (let [h {:f :sin :period 1/55}
+          m      {:f :sin :period 1/20}
+          l     {:f :sin :period 1/5}
+          z (dop +
+                 l m h
+                 ;; {:f :noise :A 0.1 :spread true}
+                 )
+          prepare #(cut (sinc-1 % 20) 2.5 2.7)
+          filter-with #(convolute z (make-filter %))
+          compare #(showf (prepare %1) (prepare (filter-with %2)))]
+      (compare l {:M 40 :K 10})
+      (compare m {:M 40 :K 10 :pass middle})
+      (compare h {:M 40 :K 10 :pass upper}))))
 
 ;; wyższe M po prostu poprawia jakość
 ;; K:
@@ -168,27 +189,34 @@
 ;; zawsze przepuszcza FP*4,
 ;; okno skaluje się odwrotnie proporcjonalnie z K
 ;; {}
-
-(comment (defn- calc-delay [signal response]
-           (float (- (max-time (correlate signal signal))
-                     (max-time (correlate signal response)))))
-
-         ;; detector thing
-         (binding [sampling-period 1/100]
-           (let [s (apply fop +
-                          (for [x (range 0.5 10 1)]
-                            {:fun :sin :spread true :A (/ x) :period (/ x) :start -5 :end 5}))
-                 s (discrete {:fun :noise :start 0 :end 0.1})
-                 s (discrete {:fun :sin :period 1/2 :start -5 :end 5})
+(defn- calc-delay [signal response]
+  (float (- (max-time (correlate signal signal))
+            (max-time (correlate signal response)))))
+(comment
+  ;; convolution correlation showcase
+  (let [f {:fun :const :end 1}
+        g {:fun :triangle :end 0.99999 :fill 0}]
+    (show (correlate g f))))
+(comment (binding [sampling-period 1/100]
+           (let [;; s (apply fop +
+         ;;          (for [x (range 0.5 10 1)]
+         ;;            {:fun :sin :spread true :A (/ x) :period (/ x) :start -5 :end 5}))
+                 s (discrete {:fun :noise-impulse :start 0 :end 0.1})
+         ;; s (discrete {:fun :sin :period 1/2 :start -5 :end 5})
+         ;;
                  cutter #(cut % 0 1)
                  sig (cutter s)]
              (show (wrap-discrete
-                    (for [x (range 0 1 0.05)
-                          :let [delayed (cutter (tshift s x))]]
+                    (for [x (range 0 1 0.01)
+                          :let [delayed (cutter (tshift (fop + {:fun :noise} s) x))]]
                       (calc-delay sig delayed))))
-             (showf sig (cutter (tshift s 0.9)))))
-         (comment
-           ;; convolution correlation showcase
-           (let [f {:fun :const :end 1}
-                 g {:fun :triangle :end 0.99999 :fill 0}]
-             (show (correlate g f)))))
+             (showf sig (cutter (tshift s 0.9))))))
+
+(showf (filter-stat 1/128 1 (make-lower-pass-filter 50 200))
+       (filter-stat 1/128 1 (make-lower-pass-filter 50 50)))
+(showf
+ (filter-stat 1/256 1 (make-filter {:M 64 :K 10 :pass upper}))
+ (filter-stat 1/256 1 (make-filter {:M 64 :K 20 :pass upper})))
+(showf
+ (filter-stat 1/256 1 (make-pass-filter {:M 40 :window hanning} 200 400))
+ (filter-stat 1/256 1 (make-pass-filter {:M 40 :window blackman} 100 300)))

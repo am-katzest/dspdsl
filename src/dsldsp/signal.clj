@@ -341,8 +341,10 @@
         span (- max min)
         fixer (fn [x] (/ (- x min) span))]
     (dop fixer x)))
+
 (defn reverse-discrete [x]
   (update x :values #(vec (reverse %))))
+
 (defn  correlate [a b]
   (let [[a b] (pad-discrete  (fix-frequency-or-throw [a b]))]
     (convolute a (reverse-discrete b))))

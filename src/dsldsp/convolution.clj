@@ -17,14 +17,22 @@
                                           (aget X (- n k)))))))))]
     (->> (range (+ M N -1))
          (mapv at-point))))
+
+(time
+ (let [x (repeat 1511 3.0)]
+   (dotimes [_ 5]
+     (convolute x x))))
+
 ;; (defn correlate [h x]
 ;;   (convolute h (vec (reverse x))))
+
 (defn correlate "h * x" [h x]
   (let [M (count h)
         N (count x)
+
         H (double-array h)
         X (double-array x)
-       ;; going lower than usual to get efficient bytecode
+        ;; going lower than usual to get efficient bytecode
         at-point (fn [^long n]
                    (let [end (min n (dec M))
                          start (max 0 (- n N -1))]
@@ -36,8 +44,3 @@
                                           (aget X (- N 1 (- n k))))))))))]
     (->> (range (+ M N -1))
          (mapv at-point))))
-(comment
-  (time
-   (let [x (repeat 1511 3.0)]
-     (dotimes [_ 100]
-       (mapv  (fn [^double x] x) (double-array x))))))
