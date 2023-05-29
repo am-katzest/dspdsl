@@ -154,7 +154,12 @@
                                          (make-filter {:M 40 :K 2 :pass upper})))
          (filter-stat 1/256 1 (convolute (make-filter {:M 40 :K 4 :pass middle})
                                          (make-filter {:M 40 :K 4 :pass middle}))))
-  (binding [sampling-period 1/100]
+  (showf (filter-stat 1/128 1 (make-lower-pass-filter {:M 50} 200))
+         (filter-stat 1/128 1 (make-upper-pass-filter {:M 50} 50)))
+  (showf
+   (filter-stat 1/128 1 (make-pass-filter {:M 40 :window hanning} 200 400))
+   (filter-stat 1/128 1 (make-pass-filter {:M 100 :window blackman} 100 300)))
+  (binding [sampling-period 1/200]
     (let [z (dop +
                  {:f :sin :period 1/55}
                  {:f :sin :period 1/20}
@@ -162,25 +167,10 @@
                  ;; {:f :noise :A 0.1 :spread true}
                  )
           prepare #(cut (sinc-1 % 20) 2.5 2.7)
-          filter-with #(convolute z (make-filter %))
-          compare #(showf (prepare z) (prepare (filter-with %)))]
-      (compare {:M 40 :K 10})
-      (compare {:M 40 :K 10 :pass middle})
-      (compare {:M 40 :K 10 :pass upper})))
-  (binding [sampling-period 1/100]
-    (let [h {:f :sin :period 1/55}
-          m      {:f :sin :period 1/20}
-          l     {:f :sin :period 1/5}
-          z (dop +
-                 l m h
-                 ;; {:f :noise :A 0.1 :spread true}
-                 )
-          prepare #(cut (sinc-1 % 20) 2.5 2.7)
-          filter-with #(convolute z (make-filter %))
-          compare #(showf (prepare %1) (prepare (filter-with %2)))]
-      (compare l {:M 40 :K 10})
-      (compare m {:M 40 :K 10 :pass middle})
-      (compare h {:M 40 :K 10 :pass upper}))))
+          compare #(showf (prepare z) (prepare (convolute z %)))]
+      (compare (make-lower-pass-filter {:M 80} 10))
+      (compare (make-pass-filter {:M 80} 18 22))
+      (compare (make-pass-filter {:M 80} 50 60)))))
 
 ;; wyższe M po prostu poprawia jakość
 ;; K:
@@ -211,12 +201,3 @@
                           :let [delayed (cutter (tshift (fop + {:fun :noise} s) x))]]
                       (calc-delay sig delayed))))
              (showf sig (cutter (tshift s 0.9))))))
-
-(showf (filter-stat 1/128 1 (make-lower-pass-filter 50 200))
-       (filter-stat 1/128 1 (make-lower-pass-filter 50 50)))
-(showf
- (filter-stat 1/256 1 (make-filter {:M 64 :K 10 :pass upper}))
- (filter-stat 1/256 1 (make-filter {:M 64 :K 20 :pass upper})))
-(showf
- (filter-stat 1/256 1 (make-pass-filter {:M 40 :window hanning} 200 400))
- (filter-stat 1/256 1 (make-pass-filter {:M 40 :window blackman} 100 300)))

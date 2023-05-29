@@ -60,6 +60,7 @@
 (defn lower [window] window)
 
 (defn make-filter [{:keys [M K pass window] :or {pass lower window square}}]
+  (println [M K pass window])
   (->>
    (make-sinc-filter M K)
    (add-window window)
@@ -88,7 +89,7 @@
      :values (vec results)
      :duration (count results)}))
 (defn make-lower-pass-filter [base cutoff-frequency]
-  (make-filter (assoc base  :pass lower :K (/ 1 sampling-period cutoff-frequency))))
+  (make-filter (assoc base :pass lower :K (/ 1 sampling-period cutoff-frequency))))
 (defn make-upper-pass-filter [base cutoff-frequency]
   (let [bf (/ 1 sampling-period 2)
         diff (- bf cutoff-frequency)
