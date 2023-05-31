@@ -61,7 +61,7 @@
                         idx (fn [^long x] (+ off x))
                         nvw (c/* (aget x (idx n)) (W N (- m)))
                         mv (aget x (idx m))]
-                    (println "lokacje:" [(+ off m) (+ off n)] [(idx m) (idx n)] "W(" N "," (- m) ")")
+                    ;; (println "lokacje:" [(+ off m) (+ off n)] [(idx m) (idx n)] "W(" N "," (- m) ")")
                     (aset x (idx m) (c/+ mv  nvw))
                     (aset x (idx n) (c/- mv  nvw))))))
     x))
@@ -72,7 +72,7 @@
             (fft-w-miejscu x)))))
 ;; śmieci
 (def arr (object-array (map c/+ (range 8))))
-
+(into [] (fft-w-miejscu arr))
 (def test-sig (s/fop +
                      {:fun :sin :period 0.128 :end 0.128}
                      {:fun :sin :period 0.064 :phase 0.5 :end 0.128}
@@ -83,3 +83,17 @@
 (g/show (przebrandzluj fft-w-miejscu test-sig))
 ;; (g/show (przebrandzluj F-1 {:fun :triangle :end 0.128 :period 0.016}))
 (into [] (fft-w-miejscu (into-array (range 16))))
+
+(defmacro runtime
+  [expr]
+  `(let [start# (. System (nanoTime))]
+     ~expr
+     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
+
+(def Ns (take 8 (iterate #(* 2 %) 2)))
+(defn stat [f]
+  (for [x Ns
+        :let [tst (->> x range (map c/+) object-array)
+              time (runtime (f tst))]]
+    time))
+(stat F-1)
