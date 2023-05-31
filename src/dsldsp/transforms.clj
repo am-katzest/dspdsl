@@ -8,7 +8,7 @@
 (def j (c/complex 0 1))
 (def -j (c/complex 0 -1))
 (definline W [N x]
-  `(c/pow e (c// (c/* j 2.0 Math/PI ~x) ~N)))
+  `(c/pow e (c// (c/* -j 2.0 Math/PI ~x) ~N)))
 (defn F-1 [x]
   (let [N (count x)]
     (amap x m _
@@ -39,22 +39,6 @@
      (aset ~a ~i (aget ~a ~j))
      (aset ~a ~j t#)))
 
-(definline motylek [off a m N]
-  `(let [m# ~m
-         n# (+ m# (/ ~N 2))
-         nwv# (c/* (aget ~a (+ ~off n#)) (W ~N (- m#)))
-         mv# (aget ~a (+ ~off m#))]
-     (println (+ ~off m#) (+ ~off n#) ~N "--" (- m#))
-     (aset ~a (+ ~off m#) (c/+ mv#  nwv#))
-     (aset ~a (+ ~off n#) (c/- mv#  nwv#))))
-(definline motylek-rev [off a m N]
-  `(let [m# ~m
-         n# (+ m# (/ ~N 2))
-         nwv# (c/* (aget ~a (+ ~off n#)) (W ~N m#))
-         mv# (aget ~a (+ ~off m#))]
-     (aset ~a (+ ~off m#) (c/+ mv#  nwv#))
-     (aset ~a (+ ~off n#) (c/- mv#  nwv#))))
-
 (defn fuck [^long off ^long N thing]
   (when (> N 2)
     (let [hn (/ N 2)]
@@ -66,44 +50,36 @@
   (let [x (object-array old)
         N (count x)
         bity (long (/ (Math/log N) (Math/log 2)))]
-    (dotimes [i (/ N 2)]
+
+    (dotimes [i N]
       (let [j (rev-int bity i)]
-        (when (not= i j) (aswap x i j))))
+        (aset x i (aget old j))))
+
     (fuck 0 N (fn [^long off ^long N]
                 (dotimes [m (/ N 2)]
-                  (let [n (+ m (/ N 2))]
-                    (println "--" off m n))
-                  (motylek off x m N))))
+                  (let [n (+ m (/ N 2))
+                        idx (fn [^long x] (+ off x))
+                        nvw (c/* (aget x (idx n)) (W N (- m)))
+                        mv (aget x (idx m))]
+                    (println "lokacje:" [(+ off m) (+ off n)] [(idx m) (idx n)] "W(" N "," (- m) ")")
+                    (aset x (idx m) (c/+ mv  nvw))
+                    (aset x (idx n) (c/- mv  nvw))))))
     x))
-(defn fft-w-miejscu-rev [old]
-  (let [x (object-array old)
-        N (count x)
-        bity (long (/ (Math/log N) (Math/log 2)))]
-    (dotimes [i (/ N 2)]
-      (let [j (rev-int bity i)]
-        (when (not= i j) (aswap x i j))))
-    (fuck 0 N (fn [^long off ^long N]
-                (dotimes [m (/ N 2)]
-                  ;; (let [n (+ m (/ N 2))]
-                  ;;   (println "--" off m n))
-                  (motylek-rev off x m N))))
-    x))
+
 (comment
   (time (let [x (long-array (range 1024))]
           (dotimes [_ 55]
             (fft-w-miejscu x)))))
-
 ;; śmieci
 (def arr (object-array (map c/+ (range 8))))
 
 (def test-sig (s/fop +
                      {:fun :sin :period 0.128 :end 0.128}
-                     {:fun :sin :period 0.064 :end 0.128}
-                     {:fun :sin :period 0.032 :end 0.128}))
+                     {:fun :sin :period 0.064 :phase 0.5 :end 0.128}
+                     {:fun :sin :period 0.032 :phase 0.25 :end 0.128}))
 ;; (g/show (przebrandzluj F-2 (przebrandzluj F-1 test-sig)))
 ;; (g/show (przebrandzluj F-1 test-sig))
-;; (g/show (przebrandzluj fft-w-miejscu-rev (przebrandzluj fft-w-miejscu test-sig)))
-;; (g/show (przebrandzluj fft-w-miejscu test-sig))
+;; (g/show (przebrandzluj fft-w-miejscu (przebrandzluj fft-w-miejscu test-sig)))
+(g/show (przebrandzluj fft-w-miejscu test-sig))
 ;; (g/show (przebrandzluj F-1 {:fun :triangle :end 0.128 :period 0.016}))
-(fft-w-miejscu arr)
-(W 8 6)
+(into [] (fft-w-miejscu (into-array (range 16))))
