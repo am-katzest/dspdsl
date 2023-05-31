@@ -1,4 +1,5 @@
 (ns dsldsp.transforms
+  (:import [org.apache.commons.math3.complex Complex])
   (:require [complex.core :as c]
             [dsldsp.signal :as s]
             [dsldsp.graph :as g]
@@ -11,8 +12,8 @@
   `(c/pow e (c// (c/* -j 2.0 Math/PI ~x) ~N)))
 (defn F-1 [x]
   (let [N (count x)]
-    (amap x m _
-          (areduce x n ret 0.0
+    (amap ^long x m _
+          (areduce ^long x n ret 0.0
                    (c/+ ret (c/*  (aget x n) (W N (c/* (c/- m) n))))))))
 
 (defn F-2 [x]
@@ -53,7 +54,7 @@
 
     (dotimes [i N]
       (let [j (rev-int bity i)]
-        (aset x i (aget old j))))
+        (when (>= i j) (aswap x i j))))
 
     (fuck 0 N (fn [^long off ^long N]
                 (dotimes [m (/ N 2)]
@@ -90,10 +91,11 @@
      ~expr
      (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
 
-(def Ns (take 8 (iterate #(* 2 %) 2)))
-(defn stat [f]
-  (for [x Ns
+(defn stat [f n]
+  (for [x (take n (iterate #(* 2 %) 2))
         :let [tst (->> x range (map c/+) object-array)
               time (runtime (f tst))]]
     time))
-(stat F-1)
+(defn stas [xs]
+  (map (fn [[x y]] [y (float (/ y x))]) (cons [(first xs) (first xs)]
+                                              (partition 2 1 xs))))
