@@ -21,13 +21,6 @@
 (definline W [N x]
   `(c/pow e (c// (c/* -j 2.0 Math/PI ~x) ~N)))
 
-(defn ft-slow [op]
-  (fn [x] (let [x (object-array x)
-                N (count x)]
-            (amap ^long x m _
-                  (areduce ^long x n ret 0.0
-                           (c/+ ret (c/*  (aget x n) (W N (* (op m) n)))))))))
-
 ;; stuff in this namespace takes 2^n inputs, as arrays of  complex numbers
 
 (defn rev-int [^long n ^long x]
@@ -53,6 +46,20 @@
     (let [j (rev-int bity i)]
       (when (>= i j) (aswap x i j)))))
 
+(defn- scale [^long N  ^"objects" x]
+  (dotimes [i N]
+    (aset x i (c// (aget x i) N))))
+
+;; fourier
+
+(defn ft-slow [op]
+  (fn [x] (let [x (object-array x)
+                N (count x)
+                ans  (amap ^long x m _
+                           (areduce ^long x n ret 0.0
+                                    (c/+ ret (c/*  (aget x n) (W N (* (op m) n))))))]
+            (when (= op -) (scale N ans))
+            ans)))
 (defn fft-w-miejscu-czas [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
@@ -67,9 +74,7 @@
                         ^Complex mv (aget x (+ off m))]
                     (aset x (+ off m) (c/+ mv  nvw))
                     (aset x (+ off n) (c/- mv  nvw)))))
-              (when (= op -)
-                (dotimes [i GN]
-                  (aset x i (c// (aget x i) GN))))
+              (when (= op -) (scale GN x))
               x)))
 (comment
   (time (let [x (object-array (map c/complex (range 1024)))]
@@ -116,12 +121,12 @@
 (defn kos-slow [x]
   (let [x (object-array x)
         N (count x)]
-    (amap ^long x m _
-          (areduce ^long x n ret 0.0
-                   (c/+ ret (c/*
-                             (aget x n)
-                             (Math/cos (/ (* Math/PI (+ (* 2 n) 1) m)
-                                          (* 2 N)))))))))
+    (scale N (amap ^long x m _
+                   (areduce ^long x n ret 0.0
+                            (c/+ ret (c/*
+                                      (aget x n)
+                                      (Math/cos (/ (* Math/PI (+ (* 2 n) 1) m)
+                                                   (* 2 N))))))))))
 (defn kos-slow-rev [x]
   (let [x (object-array x)
         N (count x)]
