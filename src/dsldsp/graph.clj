@@ -6,10 +6,19 @@
             [complex.core :as cm]
             [dsldsp.signal :as s]
             [better-cond.core :as b]))
-
+(def ^:dynamic *magnitude* true)
+(def ^:dynamic *together* true)
 (def ^:dynamic graph-samples 2000)
 (def ^:dynamic hist-bins 20)
 
+(defn- line-1 [x]
+  (if *magnitude*
+    (cm/real-part x)
+    (.abs x)))
+(defn- line-2 [x]
+  (if *magnitude*
+    (cm/imaginary-part x)
+    (cm/argument x)))
 (defn- graph-fancy [x]
   (let [{:keys [start stop fun complex]} (s/fancy x)
         diff (- stop start)
@@ -17,11 +26,11 @@
     (i/view
      (if complex
        (c/add-function (c/function-plot
-                        #(cm/real-part (fun %))
+                        #(line-1 (fun %))
                         start stop
                         :step-size (/ diff graph-samples)
                         :series-label :real)
-                       #(cm/imaginary-part (fun %))
+                       #(line-2 (fun %))
                        start stop
                        :step-size (/ diff graph-samples)
                        :series-label :imag)
@@ -31,11 +40,17 @@
   (let [x-vals (mapv #(* % sampling) (range start (+ start duration)))
         trunc (fn [xs] (if (> graph-samples (count xs)) xs
                            (let [ev-n (int (/ (count xs) graph-samples))]
-                             (->> xs (partition ev-n) (map first)))))
-        x (c/scatter-plot (trunc x-vals) (trunc values) :series-label :real)]
-    (when imaginary
-      (c/add-points x (trunc x-vals) (trunc imaginary) :series-label :imaginary))
-    (i/view x)))
+                             (->> xs (partition ev-n) (map first)))))]
+    (if imaginary
+      (let [vals (trunc (map cm/complex values imaginary))]
+        (if *together*
+          (let [x (c/scatter-plot (trunc x-vals) (map line-1 vals) :y-label (if *magnitude* "real" "absolute"))]
+            (c/add-points x (trunc x-vals) (map line-2 vals) :y-label (if *magnitude* "imaginary" "argument"))
+            (i/view x))
+          (do
+            (i/view (c/scatter-plot (trunc x-vals) (map line-1 vals) :y-label (if *magnitude* "real" "absolute")))
+            (i/view (c/scatter-plot (trunc x-vals) (map line-2 vals) :y-label (if *magnitude* "imaginary" "argument"))))))
+      (i/view (c/scatter-plot (trunc x-vals) (trunc values) :y-label "values")))))
 
 (defn truncate [period sampling xs]
   (b/cond

@@ -93,10 +93,6 @@
               (initial-shuffle GN bity x)
               x)))
 
-(comment
-  (time (let [x (long-array (range 1024))]
-          (dotimes [_ 55]
-            (fft-w-miejscu-czas x)))))
 ;; śmieci
 (def arr (object-array (map c/+ (range 8))))
 (def test-sig (s/fop +
@@ -107,7 +103,7 @@
 ;; (g/show (przebrandzluj F-1 test-sig))
 ;; (g/show (przebrandzluj fft-w-miejscu (przebrandzluj fft-w-miejscu test-sig)))
 (g/show (przebrandzluj (fft-w-miejscu-częstotliwość -) test-sig))
-(g/show (przebrandzluj (fft-w-miejscu-częstotliwość -) (przebrandzluj (fft-w-miejscu-częstotliwość -) test-sig)))
+;; (g/show (przebrandzluj (fft-w-miejscu-częstotliwość -) (przebrandzluj (fft-w-miejscu-częstotliwość -) test-sig)))
 ;; (g/show (przebrandzluj F-1 {:fun :triangle :end 0.128 :period 0.016}))
 
 (defmacro runtime
