@@ -5,30 +5,6 @@
             [dsldsp.graph :as g]
             [better-cond.core :as b]))
 
-(def e (c/complex Math/E))
-(def j (c/complex 0 1))
-(def -j (c/complex 0 -1))
-(definline W [N x]
-  `(c/pow e (c// (c/* -j 2.0 Math/PI ~x) ~N)))
-(defn F-1 [x]
-  (let [N (count x)]
-    (amap ^long x m _
-          (areduce ^long x n ret 0.0
-                   (c/+ ret (c/*  (aget x n) (W N (c/* (c/- m) n))))))))
-(defn F-1 [x]
-  (let [x (object-array x)
-        N (count x)]
-    (amap ^long x m _
-          (areduce ^long x n ret 0.0
-                   (c/+ ret (c/*  (aget x n) (W N (c/* (c/- m) n))))))))
-
-(defn F-2 [x]
-  (let [N (count x)]
-    (amap x m _
-          (areduce x n ret 0.0
-                   (c/+ ret (c/*  (aget x n) (W N (c/* m n))))))))
-
-;; stuff in this namespace takes 2^n inputs, as arrays of  complex numbers
 (defn przebrandzluj [f x]
   (let [{:keys [values imaginary] :or {imaginary (repeat 0.)} :as dis} (s/discrete x)
         formatted (into-array (map c/complex values imaginary))
@@ -37,6 +13,22 @@
     (assoc dis
            :values (mapv c/real-part result)
            :imaginary (mapv c/imaginary-part result))))
+
+(def e (c/complex Math/E))
+(def j (c/complex 0 1))
+(def -j (c/complex 0 -1))
+
+(definline W [N x]
+  `(c/pow e (c// (c/* -j 2.0 Math/PI ~x) ~N)))
+
+(defn fft-slow [op]
+  (fn [x] (let [x (object-array x)
+                N (count x)]
+            (amap ^long x m _
+                  (areduce ^long x n ret 0.0
+                           (c/+ ret (c/*  (aget x n) (W N (* (op m) n)))))))))
+
+;; stuff in this namespace takes 2^n inputs, as arrays of  complex numbers
 
 (defn rev-int [^long n ^long x]
   (unsigned-bit-shift-right (Long/reverse x) (- 64 n)))
@@ -76,11 +68,11 @@
                     (aset x (+ off m) (c/+ mv  nvw))
                     (aset x (+ off n) (c/- mv  nvw)))))
               x)))
+
 (defn fft-w-miejscu-częstotliwość [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
                   bity (long (/ (Math/log GN) (Math/log 2)))]
-
               (doseq [^long N (reverse (take bity (iterate #(* 2 %) 2)))
                       :let [lookup (object-array (create-lookup op N))]
                       ^long off (range 0 GN N)]
@@ -94,17 +86,6 @@
               x)))
 
 ;; śmieci
-(def arr (object-array (map c/+ (range 8))))
-(def test-sig (s/fop +
-                     {:fun :sin :period 0.128 :end 0.128}
-                     {:fun :sin :period 0.064 :phase 0.5 :end 0.128}
-                     {:fun :sin :period 0.032 :phase 0.25 :end 0.128}))
-;; (g/show (przebrandzluj F-2 (przebrandzluj F-1 test-sig)))
-;; (g/show (przebrandzluj F-1 test-sig))
-;; (g/show (przebrandzluj fft-w-miejscu (przebrandzluj fft-w-miejscu test-sig)))
-(g/show (przebrandzluj (fft-w-miejscu-częstotliwość -) test-sig))
-;; (g/show (przebrandzluj (fft-w-miejscu-częstotliwość -) (przebrandzluj (fft-w-miejscu-częstotliwość -) test-sig)))
-;; (g/show (przebrandzluj F-1 {:fun :triangle :end 0.128 :period 0.016}))
 
 (defmacro runtime
   [expr]
