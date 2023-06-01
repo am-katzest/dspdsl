@@ -15,6 +15,12 @@
     (amap ^long x m _
           (areduce ^long x n ret 0.0
                    (c/+ ret (c/*  (aget x n) (W N (c/* (c/- m) n))))))))
+(defn F-1 [x]
+  (let [x (object-array x)
+        N (count x)]
+    (amap ^long x m _
+          (areduce ^long x n ret 0.0
+                   (c/+ ret (c/*  (aget x n) (W N (c/* (c/- m) n))))))))
 
 (defn F-2 [x]
   (let [N (count x)]
@@ -46,27 +52,31 @@
       (fuck off hn thing)
       (fuck (+ off hn) hn thing)))
   (thing off N))
+(defn create-lookup [N]
+  (->> (/ N 2) range (map #(W N (- %)))))
+
+(defn- initial-shuffle [N bity x]
+  (dotimes [i N]
+    (let [j (rev-int bity i)]
+      (when (>= i j) (aswap x i j)))))
 
 (defn fft-w-miejscu [old]
   (let [x (object-array old)
-        N (count x)
-        bity (long (/ (Math/log N) (Math/log 2)))]
-
-    (dotimes [i N]
-      (let [j (rev-int bity i)]
-        (when (>= i j) (aswap x i j))))
-
-    (fuck 0 N (fn [^long off ^long N]
-                (dotimes [m (/ N 2)]
-                  (let [n (+ m (/ N 2))
-                        idx (fn [^long x] (+ off x))
-                        nvw (c/* (aget x (idx n)) (W N (- m)))
-                        mv (aget x (idx m))]
-                    ;; (println "lokacje:" [(+ off m) (+ off n)] [(idx m) (idx n)] "W(" N "," (- m) ")")
-                    (aset x (idx m) (c/+ mv  nvw))
-                    (aset x (idx n) (c/- mv  nvw))))))
+        GN (count x)
+        bity (long (/ (Math/log GN) (Math/log 2)))]
+    (initial-shuffle GN bity x)
+    (doseq [^long N (take bity (iterate #(* 2 %) 2))
+            :let [lookup (object-array (create-lookup N))]
+            ^long off (range 0 GN N)]
+      (dotimes [m (/ N 2)]
+        (let [^long n (+ m (/ N 2))
+              ^Complex nvw (c/* (aget x (+ off n)) (aget lookup m))
+              ^Complex mv (aget x (+ off m))]
+          (aset x (+ off m) (c/+ mv  nvw))
+          (aset x (+ off n) (c/- mv  nvw)))))
     x))
 
+(fft-w-miejscu (long-array (range 8)))
 (comment
   (time (let [x (long-array (range 1024))]
           (dotimes [_ 55]
@@ -91,10 +101,10 @@
      ~expr
      (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
 
-(defn stat [f n]
+(defn stat [f r n]
   (for [x (take n (iterate #(* 2 %) 2))
         :let [tst (->> x range (map c/+) object-array)
-              time (runtime (f tst))]]
+              time (runtime (dotimes [_ r] (f tst)))]]
     time))
 (defn stas [xs]
   (map (fn [[x y]] [y (float (/ y x))]) (cons [(first xs) (first xs)]
