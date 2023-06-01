@@ -32,4 +32,6 @@
     8 1))
 (t/deftest fft
   (t/is (> 1e-5 (diff ex-arr16 sut/F-1 (sut/fft-w-miejscu-czas -))))
-  (t/is (> 1e-5 (diff ex-arr64 sut/F-1 (sut/fft-w-miejscu-czas -)))))
+  (t/is (> 1e-5 (diff ex-arr64 sut/F-1 (sut/fft-w-miejscu-czas -))))
+  (t/is (> 1e-5 (diff ex-arr16 sut/F-2 (sut/fft-w-miejscu-czas +))))
+  (t/is (> 1e-5 (diff ex-arr64 sut/F-2 (sut/fft-w-miejscu-czas +)))))
