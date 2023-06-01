@@ -21,7 +21,7 @@
 (definline W [N x]
   `(c/pow e (c// (c/* -j 2.0 Math/PI ~x) ~N)))
 
-(defn fft-slow [op]
+(defn ft-slow [op]
   (fn [x] (let [x (object-array x)
                 N (count x)]
             (amap ^long x m _
@@ -48,7 +48,7 @@
 (defn create-lookup [op N]
   (->> (/ N 2) range (map #(W N (op %)))))
 
-(defn- initial-shuffle [N bity x]
+(defn- do-the-fft-shuffle-thing [^long N ^long bity ^"objects" x]
   (dotimes [i N]
     (let [j (rev-int bity i)]
       (when (>= i j) (aswap x i j)))))
@@ -57,7 +57,7 @@
   (fn [old] (let [x (object-array old)
                   GN (count x)
                   bity (long (/ (Math/log GN) (Math/log 2)))]
-              (initial-shuffle GN bity x)
+              (do-the-fft-shuffle-thing GN bity x)
               (doseq [^long N (take bity (iterate #(* 2 %) 2))
                       :let [lookup (object-array (create-lookup op N))]
                       ^long off (range 0 GN N)]
@@ -67,7 +67,14 @@
                         ^Complex mv (aget x (+ off m))]
                     (aset x (+ off m) (c/+ mv  nvw))
                     (aset x (+ off n) (c/- mv  nvw)))))
+              (when (= op -)
+                (dotimes [i GN]
+                  (aset x i (c// (aget x i) GN))))
               x)))
+(comment
+  (time (let [x (object-array (map c/complex (range 1024)))]
+          (dotimes [_ 55]
+            ((fft-w-miejscu-czas -) x)))))
 
 (defn fft-w-miejscu-częstotliwość [op]
   (fn [old] (let [x (object-array old)
@@ -82,7 +89,7 @@
                         ^Complex mv (aget x (+ off m))]
                     (aset x (+ off m) (c/+ mv  nv))
                     (aset x (+ off n) (c/* (c/- mv  nv) (aget lookup m))))))
-              (initial-shuffle GN bity x)
+              (do-the-fft-shuffle-thing GN bity x)
               x)))
 
 ;; śmieci
@@ -98,6 +105,30 @@
         :let [tst (->> x range (map c/+) object-array)
               time (runtime (dotimes [_ r] (f tst)))]]
     time))
+
 (defn stas [xs]
   (map (fn [[x y]] [y (float (/ y x))]) (cons [(first xs) (first xs)]
                                               (partition 2 1 xs))))
+
+(definline c [N m]
+  `(Math/sqrt (/ (if (zero? ~m) 1 2) ~N)))
+
+(defn kos-slow [x]
+  (let [x (object-array x)
+        N (count x)]
+    (amap ^long x m _
+          (areduce ^long x n ret 0.0
+                   (c/+ ret (c/*
+                             (aget x n)
+                             (Math/cos (/ (* Math/PI (+ (* 2 n) 1) m)
+                                          (* 2 N)))))))))
+(defn kos-slow-rev [x]
+  (let [x (object-array x)
+        N (count x)]
+    (amap ^long x n _
+          (areduce ^long x m ret 0.0
+                   (c/+ ret (c/*
+                             (c N m)
+                             (aget x m)
+                             (Math/cos (/ (* Math/PI (+ (* 2 n) 1) m)
+                                          (* 2 N)))))))))
