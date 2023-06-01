@@ -3,6 +3,7 @@
   (:require [complex.core :as c]
             [dsldsp.signal :as s]
             [dsldsp.graph :as g]
+            [dsldsp.convolution :as conv]
             [better-cond.core :as b]))
 
 (defn przebrandzluj [f x]
@@ -216,3 +217,36 @@
       (aset a j (c/+ x y))
       (aset a (+ j h) (c/- x y)))
     (amap a i ret (c/* scale (aget a i)))))
+(def H [0.47046721, 1.14111692, 0.650365, -0.19093442, -0.12083221, 0.0498175])
+(def HDB6-H (double-array H))
+(def HDB6-G (double-array (map-indexed (fn [n i] (if (even? n) i (- i))) (reverse H))))
+(defn falk [H G X cnt]
+  (let [N (count X)
+        xh (conv/convolute-cut H X)
+        xg (conv/convolute-cut G X)
+        x1 (double-array (/ N 2))
+        x2 (double-array (/ N 2))]
+    (dotimes [i (/ N 2)]
+      (aset x1 i (aget xh (* i 2)))
+      (aset x2 i (aget xg (inc (* i 2)))))
+    (cnt N [x1 x2])))
+;; (defn cont-rec [N [x1 x2]]
+;;   (if  (> N 2)))
+
+(defn unfalk [D R [x1 x2]]
+  (let [x1 (if (vector? x1) (unfalk D R x1) x1)
+        x2 (if (vector? x2) (unfalk D R x2) x2)
+        N (* 2 (count x1))
+        xd (double-array N 0.)
+        xr (double-array N 0.)]
+    (dotimes [i (/ N 2)]
+      (aset xd (* i 2) (aget x1 i))
+      (aset xr (inc (* i 2)) (aget x2 i)))
+    (let [d (conv/convolute-cut D xd)
+          r (conv/convolute-cut R xr)]
+      (amap r i ret (+ (aget r i) (aget d i))))))
+(def xxs (s/dop + {:fun :sin :period 0.05 :end 0.128} {:fun :noise-gauss :amplitude 0.1 :end 0.128}))
+
+(g/show xxs)
+(g/show (s/wrap-discrete (into [] (first (falk HDB6-H HDB6-G (double-array (:values xxs)) (fn [_ a] a))))))
+(g/show (s/wrap-discrete (into [] (second (falk HDB6-H HDB6-G (double-array (:values xxs)) (fn [_ a] a))))))
