@@ -44,11 +44,13 @@
 (defn- do-the-fft-shuffle-thing [^long N ^long bity ^"objects" x]
   (dotimes [i N]
     (let [j (rev-int bity i)]
-      (when (>= i j) (aswap x i j)))))
+      (when (>= i j) (aswap x i j))))
+  x)
 
 (defn- scale [^long N  ^"objects" x]
   (dotimes [i N]
-    (aset x i (c// (aget x i) N))))
+    (aset x i (c// (aget x i) N)))
+  x)
 
 ;; fourier
 
@@ -94,6 +96,7 @@
                         ^Complex mv (aget x (+ off m))]
                     (aset x (+ off m) (c/+ mv  nv))
                     (aset x (+ off n) (c/* (c/- mv  nv) (aget lookup m))))))
+              (when (= op -) (scale GN x))
               (do-the-fft-shuffle-thing GN bity x)
               x)))
 
@@ -121,12 +124,13 @@
 (defn kos-slow [x]
   (let [x (object-array x)
         N (count x)]
-    (scale N (amap ^long x m _
-                   (areduce ^long x n ret 0.0
-                            (c/+ ret (c/*
-                                      (aget x n)
-                                      (Math/cos (/ (* Math/PI (+ (* 2 n) 1) m)
-                                                   (* 2 N))))))))))
+    (amap ^long x m _
+          (areduce ^long x n ret 0.0
+                   (c/+ ret (c/*
+                             (c N m)    ;nie było we wzorze
+                             (aget x n)
+                             (Math/cos (/ (* Math/PI (+ (* 2 n) 1) m)
+                                          (* 2 N)))))))))
 (defn kos-slow-rev [x]
   (let [x (object-array x)
         N (count x)]

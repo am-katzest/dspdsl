@@ -43,7 +43,9 @@
   (t/is (> 1e-5 (diff ex-arr64 (sut/ft-slow +) (sut/fft-w-miejscu-czas +)))))
 
 (t/deftest reversing-each-other
-  (t/is (> 1e-5 (diff ex-arr64 identity (comp sut/kos-slow sut/kos-slow-rev)))))
+  (t/is (> 1e-5 (diff ex-arr64 identity (comp (sut/fft-w-miejscu-czas +) (sut/fft-w-miejscu-czas -)))))
+  (t/is (> 1e-5 (diff ex-arr64 identity (comp (sut/fft-w-miejscu-częstotliwość +) (sut/fft-w-miejscu-częstotliwość -)))))
+  (t/is (> 1e-5 (diff ex-arr64 identity (comp  sut/kos-slow-rev sut/kos-slow)))))
 (def test-sig (s/fop +
                      {:fun :sin :period 0.128 :end 0.128}
                      {:fun :sin :period 0.064 :phase 0.5 :end 0.128}
@@ -51,4 +53,3 @@
 
 (comment
   (binding [g/*together* false g/*magnitude* false] (g/show (sut/przebrandzluj (sut/fft-w-miejscu-częstotliwość -) test-sig))))
-(g/show (sut/przebrandzluj sut/kos-slow-rev (sut/przebrandzluj sut/kos-slow test-sig)))
