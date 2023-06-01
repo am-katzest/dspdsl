@@ -47,7 +47,8 @@
 (t/deftest reversing-each-other
   (t/is (> 1e-5 (diff ex-arr64 identity (comp (sut/fft-w-miejscu-czas +) (sut/fft-w-miejscu-czas -)))))
   (t/is (> 1e-5 (diff ex-arr64 identity (comp (sut/fft-w-miejscu-częstotliwość +) (sut/fft-w-miejscu-częstotliwość -)))))
-  (t/is (> 1e-5 (diff ex-arr64 identity (comp  sut/kos-slow-rev sut/kos-slow)))))
+  (t/is (> 1e-5 (diff ex-arr64 identity (comp  sut/kos-slow-rev sut/kos-slow))))
+  (t/is (> 1e-5 (diff ex-arr64 identity (comp  sut/kos-fast-rev sut/kos-fast)))))
 (def test-sig (s/fop +
                      {:fun :sin :period 0.128 :end 0.128}
                      {:fun :sin :period 0.064 :phase 0.5 :end 0.128}
