@@ -35,7 +35,8 @@
     6 6
     7 14
     8 1))
-
+(t/deftest wh
+  (t/is (= '(4.0 2.0 0.0 -2.0 0.0 2.0 0.0 2.0) (map #(* (Math/sqrt 2) 2 %) (map c/real-part (into [] (sut/walsh-slow (into-array (map c/complex '(1, 0, 1, 0, 0, 1, 1, 0))))))))))
 (t/deftest fast-same-as-slow
   (t/is (> 1e-5 (diff ex-arr16 (sut/ft-slow -) (sut/fft-w-miejscu-czas -))))
   (t/is (> 1e-5 (diff ex-arr64 (sut/ft-slow -) (sut/fft-w-miejscu-czas -))))

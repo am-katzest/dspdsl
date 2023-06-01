@@ -65,10 +65,13 @@
                                     (c/+ ret (c/*  (aget x n) (W N (* (op m) n))))))]
             (when (= op -) (scale N ans))
             ans)))
+
+(defn- count-bits [N]
+  (long (/ (Math/log N) (Math/log 2))))
 (defn fft-w-miejscu-czas [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
-                  bity (long (/ (Math/log GN) (Math/log 2)))]
+                  bity (count-bits GN)]
               (do-the-fft-shuffle-thing GN bity x)
               (doseq [^long N (take bity (iterate #(* 2 %) 2))
                       :let [lookup (object-array (create-lookup op N))]
@@ -89,7 +92,7 @@
 (defn fft-w-miejscu-częstotliwość [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
-                  bity (long (/ (Math/log GN) (Math/log 2)))]
+                  bity (count-bits GN)]
               (doseq [^long N (reverse (take bity (iterate #(* 2 %) 2)))
                       :let [lookup (object-array (create-lookup op N))]
                       ^long off (range 0 GN N)]
@@ -160,8 +163,10 @@
     (dotimes [i (/ N 2)]
       (aset x  (inc (* 2 i)) (aget y (- N i 1))))
     x))
+
 (definline Re [x]
   `(c/complex (c/real-part ~x)))
+
 (defn kos-fast [^"objects" x]
   (let [N (count x)
         ^"objects" dft ((fft-w-miejscu-czas +) (x->y x))]
@@ -173,3 +178,27 @@
         b ((fft-w-miejscu-czas -) a)
         c (amap b i ret (Re (aget b i)))]
     (y->x (scale N N c))))
+
+(defn  make-wh-array [m]
+  (let [N (int (Math/pow 2 m))
+        arr (make-array Double/TYPE N N)]
+    (aset arr 0 0  (/ (Math/pow 2 (/ m 2))))
+    (doseq [r (take m (iterate #(* % 2) 1))]
+      (dotimes [i r]
+        (dotimes [j r]
+          (let [^double  x (aget arr i j)]
+            (aset arr (+ r i) j x)
+            (aset arr i (+ r j) x)
+            (aset arr (+ r i) (+ r j) (- x))))))
+    arr))
+
+(defn multiply [^"objects" v ^"objects" m]
+  (amap v j ret
+        (let [^"doubles" mr (aget m j)]
+          (areduce mr i acc 0.0 (c/+ acc (c/* (aget v i) (aget mr i)))))))
+
+(defn walsh-slow [^"objects" x]
+  (let [N (count x)
+        b (count-bits N)
+        m (make-wh-array b)]
+    (multiply x m)))
