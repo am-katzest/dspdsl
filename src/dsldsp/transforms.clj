@@ -61,7 +61,7 @@
     (let [j (rev-int bity i)]
       (when (>= i j) (aswap x i j)))))
 
-(defn fft-w-miejscu [op]
+(defn fft-w-miejscu-czas [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
                   bity (long (/ (Math/log GN) (Math/log 2)))]
@@ -76,12 +76,27 @@
                     (aset x (+ off m) (c/+ mv  nvw))
                     (aset x (+ off n) (c/- mv  nvw)))))
               x)))
+(defn fft-w-miejscu-częstotliwość [op]
+  (fn [old] (let [x (object-array old)
+                  GN (count x)
+                  bity (long (/ (Math/log GN) (Math/log 2)))]
 
-((fft-w-miejscu -) (long-array (range 8)))
+              (doseq [^long N (reverse (take bity (iterate #(* 2 %) 2)))
+                      :let [lookup (object-array (create-lookup op N))]
+                      ^long off (range 0 GN N)]
+                (dotimes [m (/ N 2)]
+                  (let [^long n (+ m (/ N 2))
+                        ^Complex nv (aget x (+ off n))
+                        ^Complex mv (aget x (+ off m))]
+                    (aset x (+ off m) (c/+ mv  nv))
+                    (aset x (+ off n) (c/* (c/- mv  nv) (aget lookup m))))))
+              (initial-shuffle GN bity x)
+              x)))
+
 (comment
   (time (let [x (long-array (range 1024))]
           (dotimes [_ 55]
-            (fft-w-miejscu x)))))
+            (fft-w-miejscu-czas x)))))
 ;; śmieci
 (def arr (object-array (map c/+ (range 8))))
 (def test-sig (s/fop +
@@ -91,7 +106,8 @@
 ;; (g/show (przebrandzluj F-2 (przebrandzluj F-1 test-sig)))
 ;; (g/show (przebrandzluj F-1 test-sig))
 ;; (g/show (przebrandzluj fft-w-miejscu (przebrandzluj fft-w-miejscu test-sig)))
-(g/show (przebrandzluj (fft-w-miejscu +) test-sig))
+(g/show (przebrandzluj (fft-w-miejscu-częstotliwość -) test-sig))
+(g/show (przebrandzluj (fft-w-miejscu-częstotliwość -) (przebrandzluj (fft-w-miejscu-częstotliwość -) test-sig)))
 ;; (g/show (przebrandzluj F-1 {:fun :triangle :end 0.128 :period 0.016}))
 
 (defmacro runtime
