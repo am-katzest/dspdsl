@@ -52,38 +52,38 @@
       (fuck off hn thing)
       (fuck (+ off hn) hn thing)))
   (thing off N))
-(defn create-lookup [N]
-  (->> (/ N 2) range (map #(W N (- %)))))
+
+(defn create-lookup [op N]
+  (->> (/ N 2) range (map #(W N (op %)))))
 
 (defn- initial-shuffle [N bity x]
   (dotimes [i N]
     (let [j (rev-int bity i)]
       (when (>= i j) (aswap x i j)))))
 
-(defn fft-w-miejscu [old]
-  (let [x (object-array old)
-        GN (count x)
-        bity (long (/ (Math/log GN) (Math/log 2)))]
-    (initial-shuffle GN bity x)
-    (doseq [^long N (take bity (iterate #(* 2 %) 2))
-            :let [lookup (object-array (create-lookup N))]
-            ^long off (range 0 GN N)]
-      (dotimes [m (/ N 2)]
-        (let [^long n (+ m (/ N 2))
-              ^Complex nvw (c/* (aget x (+ off n)) (aget lookup m))
-              ^Complex mv (aget x (+ off m))]
-          (aset x (+ off m) (c/+ mv  nvw))
-          (aset x (+ off n) (c/- mv  nvw)))))
-    x))
+(defn fft-w-miejscu [op]
+  (fn [old] (let [x (object-array old)
+                  GN (count x)
+                  bity (long (/ (Math/log GN) (Math/log 2)))]
+              (initial-shuffle GN bity x)
+              (doseq [^long N (take bity (iterate #(* 2 %) 2))
+                      :let [lookup (object-array (create-lookup op N))]
+                      ^long off (range 0 GN N)]
+                (dotimes [m (/ N 2)]
+                  (let [^long n (+ m (/ N 2))
+                        ^Complex nvw (c/* (aget x (+ off n)) (aget lookup m))
+                        ^Complex mv (aget x (+ off m))]
+                    (aset x (+ off m) (c/+ mv  nvw))
+                    (aset x (+ off n) (c/- mv  nvw)))))
+              x)))
 
-(fft-w-miejscu (long-array (range 8)))
+((fft-w-miejscu -) (long-array (range 8)))
 (comment
   (time (let [x (long-array (range 1024))]
           (dotimes [_ 55]
             (fft-w-miejscu x)))))
 ;; śmieci
 (def arr (object-array (map c/+ (range 8))))
-(into [] (fft-w-miejscu arr))
 (def test-sig (s/fop +
                      {:fun :sin :period 0.128 :end 0.128}
                      {:fun :sin :period 0.064 :phase 0.5 :end 0.128}
@@ -91,9 +91,8 @@
 ;; (g/show (przebrandzluj F-2 (przebrandzluj F-1 test-sig)))
 ;; (g/show (przebrandzluj F-1 test-sig))
 ;; (g/show (przebrandzluj fft-w-miejscu (przebrandzluj fft-w-miejscu test-sig)))
-(g/show (przebrandzluj fft-w-miejscu test-sig))
+(g/show (przebrandzluj (fft-w-miejscu +) test-sig))
 ;; (g/show (przebrandzluj F-1 {:fun :triangle :end 0.128 :period 0.016}))
-(into [] (fft-w-miejscu (into-array (range 16))))
 
 (defmacro runtime
   [expr]
