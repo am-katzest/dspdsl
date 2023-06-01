@@ -40,7 +40,9 @@
   (t/is (> 1e-5 (diff ex-arr16 (sut/ft-slow -) (sut/fft-w-miejscu-czas -))))
   (t/is (> 1e-5 (diff ex-arr64 (sut/ft-slow -) (sut/fft-w-miejscu-czas -))))
   (t/is (> 1e-5 (diff ex-arr16 (sut/ft-slow +) (sut/fft-w-miejscu-czas +))))
-  (t/is (> 1e-5 (diff ex-arr64 (sut/ft-slow +) (sut/fft-w-miejscu-czas +)))))
+  (t/is (> 1e-5 (diff ex-arr64 (sut/ft-slow +) (sut/fft-w-miejscu-czas +))))
+  (t/is (> 1e-5 (diff ex-arr64 sut/kos-slow sut/kos-fast)))
+  (t/is (> 1e-5 (diff ex-arr64 sut/kos-slow-rev sut/kos-fast-rev))))
 
 (t/deftest reversing-each-other
   (t/is (> 1e-5 (diff ex-arr64 identity (comp (sut/fft-w-miejscu-czas +) (sut/fft-w-miejscu-czas -)))))
@@ -55,7 +57,9 @@
   (t/is (= [0 2 4 6 7 5 3 1] (->> 8 range object-array sut/x->y (into []))))
   (t/is (= [0 7 1 6 2 5 3 4] (->> 8 range object-array sut/y->x (into []))))
   (t/is (= (range 8) (->> 8 range object-array sut/x->y sut/y->x (into []))))
-  (t/is (= (range 32) (->> 8 range object-array sut/x->y sut/y->x (into [])))))
+  (t/is (= (range 32) (->> 32 range object-array sut/x->y sut/y->x (into [])))))
 
 (comment
-  (binding [g/*together* false g/*magnitude* false] (g/show (sut/przebrandzluj (sut/fft-w-miejscu-częstotliwość -) test-sig))))
+  (binding [g/*together* false g/*magnitude* false] (g/show (sut/przebrandzluj (sut/fft-w-miejscu-częstotliwość -) test-sig)))
+  (g/show (sut/przebrandzluj sut/kos-fast-rev (sut/przebrandzluj sut/kos-fast test-sig)))
+  (g/show (s/discrete test-sig)))

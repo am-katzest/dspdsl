@@ -19,7 +19,7 @@
 (def -j (c/complex 0 -1))
 
 (definline W [N x]
-  `(c/pow e (c// (c/* -j 2.0 Math/PI ~x) ~N)))
+  `(c/exp (c// (c/* -j 2.0 Math/PI ~x) ~N)))
 
 ;; stuff in this namespace takes 2^n inputs, as arrays of  complex numbers
 
@@ -47,10 +47,13 @@
       (when (>= i j) (aswap x i j))))
   x)
 
-(defn- scale [^long N  ^"objects" x]
-  (dotimes [i N]
-    (aset x i (c// (aget x i) N)))
-  x)
+(defn- scale
+  ([^long N  ^"objects" x]
+   (scale N (/ N) x))
+  ([^long N s  ^"objects" x]
+   (dotimes [i N]
+     (aset x i (c/* (aget x i) s)))
+   x))
 
 ;; fourier
 
@@ -157,8 +160,16 @@
     (dotimes [i (/ N 2)]
       (aset x  (inc (* 2 i)) (aget y (- N i 1))))
     x))
-;; (defn kos-slow [^"objects" x]
-;;   (let [N (count x)
-;;         y (object-array N)]
-;;     (dotimes [i (/ N 2)]
-;;       (aset y i (aget x)))))
+(definline Re [x]
+  `(c/complex (c/real-part ~x)))
+(defn kos-fast [^"objects" x]
+  (let [N (count x)
+        ^"objects" dft ((fft-w-miejscu-czas +) (x->y x))]
+    (amap dft m ret (Re (c/* (c N m) (c/exp (c/* -j Math/PI m (/ 1 2 N))) (aget dft m))))))
+
+(defn kos-fast-rev [^"objects" x]
+  (let [N (count x)
+        a (amap x m ret (c/* (c N m) (c/exp (c/* j Math/PI m (/ 1 2 N))) (aget x m)))
+        b ((fft-w-miejscu-czas -) a)
+        c (amap b i ret (Re (aget b i)))]
+    (y->x (scale N N c))))
