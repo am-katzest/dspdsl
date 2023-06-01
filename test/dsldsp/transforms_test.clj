@@ -51,5 +51,11 @@
                      {:fun :sin :period 0.064 :phase 0.5 :end 0.128}
                      {:fun :sin :period 0.032 :phase 0.25 :end 0.128}))
 
+(t/deftest xyxy
+  (t/is (= [0 2 4 6 7 5 3 1] (->> 8 range object-array sut/x->y (into []))))
+  (t/is (= [0 7 1 6 2 5 3 4] (->> 8 range object-array sut/y->x (into []))))
+  (t/is (= (range 8) (->> 8 range object-array sut/x->y sut/y->x (into []))))
+  (t/is (= (range 32) (->> 8 range object-array sut/x->y sut/y->x (into [])))))
+
 (comment
   (binding [g/*together* false g/*magnitude* false] (g/show (sut/przebrandzluj (sut/fft-w-miejscu-częstotliwość -) test-sig))))

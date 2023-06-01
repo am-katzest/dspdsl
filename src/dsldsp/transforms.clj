@@ -141,3 +141,24 @@
                              (aget x m)
                              (Math/cos (/ (* Math/PI (+ (* 2 n) 1) m)
                                           (* 2 N)))))))))
+(defn x->y [^"objects" x]
+  (let [N (count x)
+        y (object-array N)]
+    (dotimes [i (/ N 2)]
+      (aset y i (aget x (* 2 i))))
+    (dotimes [i (/ N 2)]
+      (aset y (- N i 1) (aget x (inc (* 2 i)))))
+    y))
+(defn y->x [^"objects" y]
+  (let [N (count y)
+        x (object-array N)]
+    (dotimes [i (/ N 2)]
+      (aset x (* 2 i) (aget y i)))
+    (dotimes [i (/ N 2)]
+      (aset x  (inc (* 2 i)) (aget y (- N i 1))))
+    x))
+;; (defn kos-slow [^"objects" x]
+;;   (let [N (count x)
+;;         y (object-array N)]
+;;     (dotimes [i (/ N 2)]
+;;       (aset y i (aget x)))))
