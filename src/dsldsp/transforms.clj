@@ -197,8 +197,22 @@
         (let [^"doubles" mr (aget m j)]
           (areduce mr i acc 0.0 (c/+ acc (c/* (aget v i) (aget mr i)))))))
 
-(defn walsh-slow [^"objects" x]
+(defn wht-slow [^"objects" x]
   (let [N (count x)
         b (count-bits N)
         m (make-wh-array b)]
     (multiply x m)))
+
+(defn wht-fast [x]
+  (let [a (object-array x)
+        N (count a)
+        b (count-bits N)
+        scale (/ (Math/pow 2 (/ b 2)))]
+    (doseq [h (take b (iterate #(* % 2) 1))
+            i (range 0 N (* h 2))
+            j (range i (+ i h))
+            :let [x (aget a j)
+                  y (aget a (+ j h))]]
+      (aset a j (c/+ x y))
+      (aset a (+ j h) (c/- x y)))
+    (amap a i ret (c/* scale (aget a i)))))
