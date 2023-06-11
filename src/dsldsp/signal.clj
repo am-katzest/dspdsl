@@ -298,7 +298,6 @@
         b (proper-signal b)]
     (if (or (= :discrete (:type a)) (= :discrete (:type b)))
       ;; signal is discrete
-      ;; TODO add padding
       (let [[a b] (pad-discrete (fix-frequency-or-throw [a b]))]
         (assoc a :imaginary (:values b)))
       ;; signal is fancy
@@ -310,7 +309,7 @@
                :fun #(c/complex (fa %) (fb %))
                :complex true)))))
 
-(def ^:dynamic *interpolate* rzędu-pierwszego)
+(def ^:dynamic *interpolate* (fn [x] (sinc-1 x 5)))
 
 ;; conversion magic
 (defmethod discrete :default [x] (discrete (proper-signal x)))

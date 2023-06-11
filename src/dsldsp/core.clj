@@ -4,7 +4,7 @@
             [dsldsp.io :as i :refer :all]
             [dsldsp.filter :as f :refer :all]
             [complex.core :as c]))
-;; fancy are a second-class citizens, everything complex is done via discrete
+
 (defn showf [a b] (graph (make-complex (fancy a) (fancy b))))
 (defn showw [a b] (graph (make-complex a b)))
 (comment
