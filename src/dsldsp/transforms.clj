@@ -69,7 +69,8 @@
 
 (defn- count-bits [N]
   (long (/ (Math/log N) (Math/log 2))))
-(defn fft-w-miejscu-czas [op]
+
+(defn- fft-w-miejscu-czas [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
                   bity (count-bits GN)]
@@ -85,12 +86,11 @@
                     (aset x (+ off n) (c/- mv  nvw)))))
               (when (= op -) (scale GN x))
               x)))
-(comment
-  (time (let [x (object-array (map c/complex (range 1024)))]
-          (dotimes [_ 55]
-            ((fft-w-miejscu-czas -) x)))))
 
-(defn fft-w-miejscu-częstotliwość [op]
+(def fft-time-fast (fft-w-miejscu-czas -))
+(def fft-time-fast-rev (fft-w-miejscu-czas +))
+
+(defn- fft-w-miejscu-częstotliwość [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
                   bity (count-bits GN)]
@@ -107,23 +107,10 @@
               (do-the-fft-shuffle-thing GN bity x)
               x)))
 
-;; śmieci
+(def fft-freq-fast (fft-w-miejscu-częstotliwość -))
+(def fft-freq-fast-rev (fft-w-miejscu-częstotliwość +))
 
-(defmacro runtime
-  [expr]
-  `(let [start# (. System (nanoTime))]
-     ~expr
-     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
 
-(defn stat [f r n]
-  (for [x (take n (iterate #(* 2 %) 2))
-        :let [tst (->> x range (map c/+) object-array)
-              time (runtime (dotimes [_ r] (f tst)))]]
-    time))
-
-(defn stas [xs]
-  (map (fn [[x y]] [y (float (/ y x))]) (cons [(first xs) (first xs)]
-                                              (partition 2 1 xs))))
 
 (definline c [N m]
   `(Math/sqrt (/ (if (zero? ~m) 1 2) ~N)))
@@ -250,3 +237,21 @@
 (g/show xxs)
 (g/show (s/wrap-discrete (into [] (first (falk HDB6-H HDB6-G (double-array (:values xxs)) (fn [_ a] a))))))
 (g/show (s/wrap-discrete (into [] (second (falk HDB6-H HDB6-G (double-array (:values xxs)) (fn [_ a] a))))))
+;┌──────────────┐
+;│ benchmarking │
+;└──────────────┘
+(defmacro runtime
+  [expr]
+  `(let [start# (. System (nanoTime))]
+     ~expr
+     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
+
+(defn stat [f r n]
+  (for [x (take n (iterate #(* 2 %) 2))
+        :let [tst (->> x range (map c/+) object-array)
+              time (runtime (dotimes [_ r] (f tst)))]]
+    time))
+
+(defn stas [xs]
+  (map (fn [[x y]] [y (float (/ y x))]) (cons [(first xs) (first xs)]
+                                              (partition 2 1 xs))))
