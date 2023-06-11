@@ -136,16 +136,17 @@
       (compare (make-lower-pass-filter {:M 80} 10))
       (compare (make-pass-filter {:M 80} 18 22))
       (compare (make-pass-filter {:M 80} 50 60)))))
-
-
-(defn- calc-delay [signal response]
-  (float (- (max-time (correlate signal signal))
-            (max-time (correlate signal response)))))
 (comment
-  ;; convolution correlation showcase
+  ;; konwolucja / korelacja
   (let [f {:fun :const :end 1}
         g {:fun :triangle :end 0.99999 :fill 0}]
     (show (correlate g f))))
+
+;; korelacyjne wykrywanie odległości
+(defn- calc-delay [signal response]
+  (float (- (max-time (correlate signal signal))
+            (max-time (correlate signal response)))))
+
 (comment (binding [sampling-period 1/100]
            (let [;; s (apply fop +
          ;;          (for [x (range 0.5 10 1)]
