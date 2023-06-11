@@ -9,8 +9,8 @@
 (def ^:dynamic *magnitude* true)
 (def ^:dynamic *together* true)
 (def ^:dynamic *fake-complex* false)
-(def ^:dynamic graph-samples 2000)
-(def ^:dynamic hist-bins 20)
+(def ^:dynamic *graph-samples* 2000)
+(def ^:dynamic *hist-bins* 20)
 
 (defn- line-1 [x]
   (if *magnitude*
@@ -37,18 +37,18 @@
        (c/add-function (c/function-plot
                         #(line-1 (fun %))
                         start stop
-                        :step-size (/ diff graph-samples)
+                        :step-size (/ diff *graph-samples*)
                         :series-label :real)
                        #(line-2 (fun %))
                        start stop
-                       :step-size (/ diff graph-samples)
+                       :step-size (/ diff *graph-samples*)
                        :series-label :imag)
-       (c/function-plot fun start stop :step-size (/ diff graph-samples))))))
+       (c/function-plot fun start stop :step-size (/ diff *graph-samples*))))))
 
 (defn- graph-discrete [{:keys [start duration values sampling imaginary]}]
   (let [x-vals (mapv #(* % sampling) (range start (+ start duration)))
-        trunc (fn [xs] (if (> graph-samples (count xs)) xs
-                           (let [ev-n (int (/ (count xs) graph-samples))]
+        trunc (fn [xs] (if (> *graph-samples* (count xs)) xs
+                           (let [ev-n (int (/ (count xs) *graph-samples*))]
                              (->> xs (partition ev-n) (map first)))))]
     (if imaginary
       (let [vals (trunc (map cm/complex values imaginary))]
@@ -100,7 +100,7 @@
         minv (apply min allvalues)
         maxv (apply max allvalues)
         diff (- maxv minv)
-        bin-size (/ diff hist-bins)
+        bin-size (/ diff *hist-bins*)
         round #(* (Math/round (float (/ (+ % (/ bin-size 2)) bin-size))) bin-size)
         bin-values (fn [xs] (->>
                              xs

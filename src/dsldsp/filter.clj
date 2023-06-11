@@ -48,7 +48,7 @@
 
 (defn make-window [coll]
   {:type :discrete
-   :sampling sampling-period
+   :sampling *sampling-period*
    :start (int (- (/ (count coll) 2)))
    :duration (count coll)
    :values coll})
@@ -73,7 +73,7 @@
 
 (defn filter-stat [step duration filter]
   (let [cut 0.1
-        make (fn [f] {:f :sin :spread true :A 1 :period (/ sampling-period f) :duration duration})
+        make (fn [f] {:f :sin :spread true :A 1 :period (/ *sampling-period* f) :duration duration})
         fractions (range step 1/2  step) ;to hide the weird things interlacing makes
         mask  {:fun :square :end  duration :period duration :fill (- 1 cut cut) :phase cut :spread true}
         pass #(convolute % filter)
@@ -84,14 +84,14 @@
                      (value sig)))]
     {:type :discrete
      :period 0
-     :sampling (/ step sampling-period)
+     :sampling (/ step *sampling-period*)
      :start 0
      :values (vec results)
      :duration (count results)}))
 (defn make-lower-pass-filter [base cutoff-frequency]
-  (make-filter (assoc base :pass lower :K (/ 1 sampling-period cutoff-frequency))))
+  (make-filter (assoc base :pass lower :K (/ 1 *sampling-period* cutoff-frequency))))
 (defn make-upper-pass-filter [base cutoff-frequency]
-  (let [bf (/ 1 sampling-period 2)
+  (let [bf (/ 1 *sampling-period* 2)
         diff (- bf cutoff-frequency)
         K (* 2 (/ bf diff))]
     (make-filter  (assoc base :pass upper :K K))))

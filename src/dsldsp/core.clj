@@ -21,7 +21,7 @@
              :amplitude (/ x)})))
 
   ;; pokazywanie wielu funkcji jednocześnie, inne operatory, zmiana częstotliwości próbkowania
-  (binding [sampling-period 1/730]
+  (binding [*sampling-period* 1/730]
     (show-two
      (apply dop max
             (for [x (range 0 1 (/ 5))]
@@ -38,7 +38,7 @@
         {:fun :triangle :fill 1.0 :s 8 :e 10}))
 
   ;; obliczanie statystyk
-  (binding [sampling-period 0.05] (perf-stat {:fun :sin}))
+  (binding [*sampling-period* 0.05] (perf-stat {:fun :sin}))
 
 
   ;; zapisywanie do pliku
@@ -69,7 +69,7 @@
   (show "complex")
 
   ;; impulsy
-  (binding [sampling-period 1/100]
+  (binding [*sampling-period* 1/100]
     (show (dop + {:function :sin :duration 0.1  :amplitude 3}
                (impulse :ns 2)
                (impulse :ns 4))))
@@ -80,16 +80,16 @@
                         x)))
 
   ;; porównanie metod
-  (binding [sampling-period 1/10]
+  (binding [*sampling-period* 1/10]
     (let [x (fop + {:f :sin} {:f :sin :A 1/2 :p 1/2} {:f :sin :p 3})]
       (show-two x (rzędu-pierwszego (discrete x)))
       (show-two x (rzędu-zerowego (discrete x)))
       (show-two x (sinc-1 (discrete x) 5))))
 
   ;; numeryczne porównanie
-  (binding [sampling-period 1/200]
+  (binding [*sampling-period* 1/200]
     (let [x {:f :sin :s -5 :e 5}
-          sampled (binding [sampling-period 1/6] (discrete x))
+          sampled (binding [*sampling-period* 1/6] (discrete x))
           x (discrete x)]
       {:0 (other-stat x (rzędu-zerowego sampled))
        :1 (other-stat x (rzędu-pierwszego sampled))
@@ -131,7 +131,7 @@
    (filter-stat 1/128 1 (make-pass-filter {:M 40 :window hanning} 200 400))
    (filter-stat 1/128 1 (make-pass-filter {:M 100 :window blackman} 100 300)))
   ;; filtry na praktycznej funkcji
-  (binding [sampling-period 1/200]
+  (binding [*sampling-period* 1/200]
     (let [z (dop +
                  {:f :sin :period 1/55}
                  {:f :sin :period 1/20}
@@ -154,7 +154,7 @@
   (float (- (max-time (correlate signal signal))
             (max-time (correlate signal response)))))
 
-(comment (binding [sampling-period 1/100]
+(comment (binding [*sampling-period* 1/100]
            (let [ ;; s (apply fop +
                  ;;          (for [x (range 0.5 10 1)]
                  ;;            {:fun :sin :spread true :A (/ x) :period (/ x) :start -5 :end 5}))
@@ -171,7 +171,7 @@
 
 (comment
   ;; transformations
-  (def sinusoids (binding [sampling-period 1/128]
+  (def sinusoids (binding [*sampling-period* 1/128]
                    (dop + {:fun :sin :e 1 :period 1/16}
                         {:fun :sin :e 1 :period 1/8 :phase 0.12}
                         {:fun :sin :e 1 :period 1/32})))

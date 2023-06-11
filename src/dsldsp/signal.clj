@@ -35,7 +35,7 @@
 (defmethod proper-signal :file [x] (discrete x))
 (defmethod proper-signal :spec [x] (fancy x))
 
-(def ^:dynamic sampling-period 1/1000)
+(def ^:dynamic *sampling-period* 1/1000)
 
 (defn max0 [x] (max x 0))
 
@@ -163,7 +163,7 @@
 
 (defn fancy->discrete [x &
                        {:keys [sampling]
-                        :or {sampling sampling-period}}]
+                        :or {sampling *sampling-period*}}]
   (let [{:keys [fun complex period start stop]} (fancy x)
         values (->> (range start stop sampling)
                     (mapv fun))
@@ -216,8 +216,8 @@
   (b/cond
     :let [s (->> xs (map proper-signal) (keep get-sampling) (map float) sort dedupe)]
     (not (#{0 1} (count s))) (throw (ex-info "different sampling frequencies!" {:freq s}))
-    :let [sf (or (first s) sampling-period)]
-    (binding [sampling-period sf] (mapv discrete xs))))
+    :let [sf (or (first s) *sampling-period*)]
+    (binding [*sampling-period* sf] (mapv discrete xs))))
 
 (defn dop "applies operator to (complex) values of signals at each point of time"
   [operator & xs]
@@ -285,7 +285,7 @@
            :values values')))
 
 (defn impulse [& {:keys [sampling ns A len] :or
-                  {sampling sampling-period ns 0 A 1 len 1}}]
+                  {sampling *sampling-period* ns 0 A 1 len 1}}]
   {:type :discrete :sampling sampling :start ns
    :duration len :period 0. :values (vec (repeat len A))})
 
@@ -358,4 +358,4 @@
   (let [{:keys [values sampling start]} (discrete s)]
     (* (+ (max-index values) start) sampling)))
 
-(defn wrap-discrete [xs] {:type :discrete :start 0 :sampling sampling-period :duration (count xs) :values xs})
+(defn wrap-discrete [xs] {:type :discrete :start 0 :sampling *sampling-period* :duration (count xs) :values xs})
