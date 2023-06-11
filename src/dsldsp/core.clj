@@ -3,6 +3,7 @@
             [dsldsp.graph :as g :refer :all]
             [dsldsp.io :as i :refer :all]
             [dsldsp.filter :as f :refer :all]
+            [dsldsp.trans :as t :refer :all]
             [complex.core :as c]))
 
 (comment
@@ -37,7 +38,7 @@
         {:fun :triangle :fill 1.0 :s 8 :e 10}))
 
   ;; obliczanie statystyk
-  (binding [sampling-period 0.05] (stat {:fun :sin}))
+  (binding [sampling-period 0.05] (perf-stat {:fun :sin}))
 
 
   ;; zapisywanie do pliku
@@ -64,6 +65,7 @@
   (histogram (make-complex {:fun :noise-gauss} {:fun :sin}))
 
   (write "complex" (make-complex {:fun :sin} {:fun :sin :phase 0.5}))
+  (show (make-complex {:fun :sin} {:fun :sin :phase 0.5}))
   (show "complex")
 
   ;; impulsy
@@ -153,12 +155,12 @@
             (max-time (correlate signal response)))))
 
 (comment (binding [sampling-period 1/100]
-           (let [;; s (apply fop +
-         ;;          (for [x (range 0.5 10 1)]
-         ;;            {:fun :sin :spread true :A (/ x) :period (/ x) :start -5 :end 5}))
+           (let [ ;; s (apply fop +
+                 ;;          (for [x (range 0.5 10 1)]
+                 ;;            {:fun :sin :spread true :A (/ x) :period (/ x) :start -5 :end 5}))
                  s (discrete {:fun :noise-impulse :start 0 :end 0.1})
-         ;; s (discrete {:fun :sin :period 1/2 :start -5 :end 5})
-         ;;
+                 ;; s (discrete {:fun :sin :period 1/2 :start -5 :end 5})
+                 ;;
                  cutter #(cut % 0 1)
                  sig (cutter s)]
              (show (wrap-discrete
@@ -166,3 +168,12 @@
                           :let [delayed (cutter (tshift (fop + {:fun :noise} s) x))]]
                       (calc-delay sig delayed))))
              (showf sig (cutter (tshift s 0.9))))))
+
+(comment
+  ;; transformations
+  (def sinusoids (binding [sampling-period 1/128]
+                   (dop + {:fun :sin :e 1 :period 1/16}
+                        {:fun :sin :e 1 :period 1/8 :phase 0.12}
+                        {:fun :sin :e 1 :period 1/32})))
+  (binding [*magnitude* false *together* false] (show (fourier-slow sinusoids)))
+  )

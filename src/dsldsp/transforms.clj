@@ -6,15 +6,6 @@
             [dsldsp.convolution :as conv]
             [better-cond.core :as b]))
 
-(defn przebrandzluj [f x]
-  (let [{:keys [values imaginary] :or {imaginary (repeat 0.)} :as dis} (s/discrete x)
-        formatted (into-array (map c/complex values imaginary))
-        result (into [] (f formatted))]
-    (println (count values))
-    (assoc dis
-           :values (mapv c/real-part result)
-           :imaginary (mapv c/imaginary-part result))))
-
 (def e (c/complex Math/E))
 (def j (c/complex 0 1))
 (def -j (c/complex 0 -1))
@@ -67,10 +58,10 @@
             (when (= op -) (scale N ans))
             ans)))
 
-(defn- count-bits [N]
+(defn count-bits [N]
   (long (/ (Math/log N) (Math/log 2))))
 
-(defn- fft-w-miejscu-czas [op]
+(defn fft-w-miejscu-czas [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
                   bity (count-bits GN)]
@@ -87,10 +78,7 @@
               (when (= op -) (scale GN x))
               x)))
 
-(def fft-time-fast (fft-w-miejscu-czas -))
-(def fft-time-fast-rev (fft-w-miejscu-czas +))
-
-(defn- fft-w-miejscu-częstotliwość [op]
+(defn fft-w-miejscu-częstotliwość [op]
   (fn [old] (let [x (object-array old)
                   GN (count x)
                   bity (count-bits GN)]
@@ -106,11 +94,6 @@
               (when (= op -) (scale GN x))
               (do-the-fft-shuffle-thing GN bity x)
               x)))
-
-(def fft-freq-fast (fft-w-miejscu-częstotliwość -))
-(def fft-freq-fast-rev (fft-w-miejscu-częstotliwość +))
-
-
 
 (definline c [N m]
   `(Math/sqrt (/ (if (zero? ~m) 1 2) ~N)))
@@ -207,6 +190,7 @@
 (def H [0.47046721, 1.14111692, 0.650365, -0.19093442, -0.12083221, 0.0498175])
 (def HDB6-H (double-array H))
 (def HDB6-G (double-array (map-indexed (fn [n i] (if (even? n) i (- i))) (reverse H))))
+
 (defn falk [H G X cnt]
   (let [N (count X)
         xh (conv/convolute-cut H X)
@@ -232,26 +216,3 @@
     (let [d (conv/convolute-cut D xd)
           r (conv/convolute-cut R xr)]
       (amap r i ret (+ (aget r i) (aget d i))))))
-(def xxs (s/dop + {:fun :sin :period 0.05 :end 0.128} {:fun :noise-gauss :amplitude 0.1 :end 0.128}))
-
-(g/show xxs)
-(g/show (s/wrap-discrete (into [] (first (falk HDB6-H HDB6-G (double-array (:values xxs)) (fn [_ a] a))))))
-(g/show (s/wrap-discrete (into [] (second (falk HDB6-H HDB6-G (double-array (:values xxs)) (fn [_ a] a))))))
-;┌──────────────┐
-;│ benchmarking │
-;└──────────────┘
-(defmacro runtime
-  [expr]
-  `(let [start# (. System (nanoTime))]
-     ~expr
-     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
-
-(defn stat [f r n]
-  (for [x (take n (iterate #(* 2 %) 2))
-        :let [tst (->> x range (map c/+) object-array)
-              time (runtime (dotimes [_ r] (f tst)))]]
-    time))
-
-(defn stas [xs]
-  (map (fn [[x y]] [y (float (/ y x))]) (cons [(first xs) (first xs)]
-                                              (partition 2 1 xs))))

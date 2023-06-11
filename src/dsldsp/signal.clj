@@ -306,10 +306,10 @@
             fa (:fun a)
             fb (:fun b)]
         (assoc (combine-meta-fancy a b)
-               :fun (fn [x] [(fa x) (fb x)])
+               :fun (fn [x] (c/complex (fa x) (fb x)))
                :complex true)))))
 
-(def ^:dynamic *interpolate* (fn [x] (sinc-1 x 5)))
+(def ^:dynamic *interpolate* rzędu-pierwszego)
 
 ;; conversion magic
 (defmethod discrete :default [x] (discrete (proper-signal x)))
