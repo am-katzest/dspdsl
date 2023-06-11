@@ -19,23 +19,12 @@
                         Math/PI x)))))
        make-it-add-up-to-one))
 
-(defn make-filter-old [M K]
-  (->> M
-       range
-       (mapv (fn [n]
-               (let [thing (/ (- M 1) 2)
-                     x (- n thing)]
-                 (if (= thing n) (/ 2 K)
-                     (/ (Math/sin (/ (* 2 Math/PI x)
-                                     K))
-                        Math/PI x)))))
-       make-it-add-up-to-one))
-
 (defn- idk-what-it-is [n j M] (Math/cos (* j Math/PI n (/ M))))
 (defn- make-window-from-parameters [x1 & xs]
   (fn [M]
     (mapv (fn [n] (apply + x1 (for [[a j] xs]
                                 (* a (idk-what-it-is n j M))))) (range M))))
+
 (def hamming (make-window-from-parameters 0.53836 [-0.46164 2]))
 (def hanning (make-window-from-parameters 0.5 [-0.5 2]))
 (def blackman (make-window-from-parameters 0.42 [-0.5 2] [0.08 4]))
@@ -71,8 +60,9 @@
   (let [{:keys [values]} (discrete x)]
     (->> values (map #(* % %)) (reduce +))))
 
-(defn filter-stat [step duration filter]
+(defn filter-stat [step filter]
   (let [cut 0.1
+        duration 1
         make (fn [f] {:f :sin :spread true :A 1 :period (/ *sampling-period* f) :duration duration})
         fractions (range step 1/2  step) ;to hide the weird things interlacing makes
         mask  {:fun :square :end  duration :period duration :fill (- 1 cut cut) :phase cut :spread true}
@@ -88,13 +78,16 @@
      :start 0
      :values (vec results)
      :duration (count results)}))
+
 (defn make-lower-pass-filter [base cutoff-frequency]
   (make-filter (assoc base :pass lower :K (/ 1 *sampling-period* cutoff-frequency))))
+
 (defn make-upper-pass-filter [base cutoff-frequency]
   (let [bf (/ 1 *sampling-period* 2)
         diff (- bf cutoff-frequency)
         K (* 2 (/ bf diff))]
     (make-filter  (assoc base :pass upper :K K))))
+
 (defn make-pass-filter [base upper lower]
   (convolute
    (make-lower-pass-filter base lower)

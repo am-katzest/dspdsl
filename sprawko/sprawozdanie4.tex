@@ -140,6 +140,27 @@ Do zapisywania sygnału do pliku służy procedura \cljt{write} biorąca dwa arg
 \cljt{(write "sygnał" {:fun :sin})}
 wczytywanie odbywa się automatycznie;
 \cljt{(show (fop + "sygnał" {:fun :square}))}.
+\subsection{konwolucja i filtrowanie}
+w przestrzeni nazw \cljt{signal} znajdują się dwie funkcje \cljt{convolute} i
+\cljt{correlate}, przyjmują one dwa sygnały i ich zachowanie jest zgodne z nazwą
+w przestrzeni nazw \cljt{filter} znajdują się funkcje mające na celu ułatwienie
+tworzenia filtrów, najużyteczniejszymi z nich są:
+\begin{itemize}
+	\item \clj{make-filter}, przyjmuje ona mapę z czterema argumentami, \cljt{M}, \cljt{K}, \cljt{pass}
+	      i \cljt{window}, gdzie pass to jedna z funkcji \cljt{middle}, \cljt{upper}
+	      \cljt{lower}, a \cljt{window} to jedno z okien \cljt{square},
+	      \cljt{hamming}, \cljt{blackman}, \cljt{hanning}, zwraca filtr
+	\item \cljt{make-lower-pass-filter}, przyjmuje mapę zawierającą inne parametry
+	      (M i okno) oraz częstotliwość odcięcia, zwraca filtr dolnopasmowy
+	\item \cljt{make-upper-pass-filter}, przyjmuje mapę zawierającą inne parametry
+	      (M i okno) oraz częstotliwość odcięcia, zwraca filtr górnopasmowy
+	\item \cljt{make-pass-filter}, przyjmuje mapę zawierającą inne parametry
+	      (M i okno) oraz dolną i górną częstotliwości odcięcia, zwraca filtr pasmowy
+	\item \cljt{filter-stat}, przyjmuje krok, i filtr, filtruje
+	      sygnały o różnych częstotliwościach, i zwraca sygnał dyskretny
+	      reprezentujący stopień w jakim przepuszcza je filtr, im mniejszy krok
+	      tym więcej próbek
+\end{itemize}
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIBLIOGRAFIA

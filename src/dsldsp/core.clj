@@ -40,8 +40,7 @@
   ;; obliczanie statystyk
   (binding [*sampling-period* 0.05] (perf-stat {:fun :sin}))
 
-
-  ;; zapisywanie do pliku
+;; zapisywanie do pliku
   (let [v (fop -
                {:fun :const :e 1}
                {:fun :sin-half :period 2 :e 1})
@@ -117,19 +116,19 @@
 (comment
   ;; showcase filters
   (show-two
-   (filter-stat 1/128 1 (make-filter {:M 32 :K 8 :pass upper :window blackman}))
-   (filter-stat 1/128 1 (make-filter {:M 64 :K 8 :pass lower})))
+   (filter-stat 1/128 (make-filter {:M 32 :K 8 :pass upper :window blackman}))
+   (filter-stat 1/128 (make-filter {:M 64 :K 8 :pass lower})))
   (show-two
-   (filter-stat 1/256 1 (make-filter {:M 64 :K 8 :pass middle :window hanning}))
-   (filter-stat 1/256 1 (make-filter {:M 64 :K 8 :pass middle})))
+   (filter-stat 1/256 (make-filter {:M 64 :K 8 :pass middle :window hanning}))
+   (filter-stat 1/256 (make-filter {:M 64 :K 8 :pass middle})))
   (show-two
-   (filter-stat 1/256 1 (make-filter {:M 20 :K 8 :pass middle :window hanning}))
-   (filter-stat 1/256 1 (make-filter {:M 20 :K 8 :pass middle})))
-  (show-two (filter-stat 1/128 1 (make-lower-pass-filter {:M 50} 200))
-            (filter-stat 1/128 1 (make-upper-pass-filter {:M 50} 50)))
+   (filter-stat 1/256 (make-filter {:M 20 :K 8 :pass middle :window hanning}))
+   (filter-stat 1/256 (make-filter {:M 20 :K 8 :pass middle})))
+  (show-two (filter-stat 1/128 (make-lower-pass-filter {:M 50} 200))
+            (filter-stat 1/128 (make-upper-pass-filter {:M 50} 50)))
   (show-two
-   (filter-stat 1/128 1 (make-pass-filter {:M 40 :window hanning} 200 400))
-   (filter-stat 1/128 1 (make-pass-filter {:M 100 :window blackman} 100 300)))
+   (filter-stat 1/128 (make-pass-filter {:M 40 :window hanning} 200 400))
+   (filter-stat 1/128 (make-pass-filter {:M 100 :window blackman} 100 300)))
   ;; filtry na praktycznej funkcji
   (binding [*sampling-period* 1/200]
     (let [z (dop +
@@ -148,14 +147,13 @@
         g {:fun :triangle :end 0.99999 :fill 0}]
     (show (correlate g f))))
 
-
 ;; korelacyjne wykrywanie odległości
 (defn- calc-delay [signal response]
   (float (- (max-time (correlate signal signal))
             (max-time (correlate signal response)))))
 
 (comment (binding [*sampling-period* 1/100]
-           (let [ ;; s (apply fop +
+           (let [;; s (apply fop +
                  ;;          (for [x (range 0.5 10 1)]
                  ;;            {:fun :sin :spread true :A (/ x) :period (/ x) :start -5 :end 5}))
                  s (discrete {:fun :noise-impulse :start 0 :end 0.1})
@@ -175,5 +173,4 @@
                    (dop + {:fun :sin :e 1 :period 1/16}
                         {:fun :sin :e 1 :period 1/8 :phase 0.12}
                         {:fun :sin :e 1 :period 1/32})))
-  (binding [*magnitude* false *together* false] (show (fourier-slow sinusoids)))
-  )
+  (binding [*magnitude* false *together* false] (show (fourier-slow sinusoids))))
