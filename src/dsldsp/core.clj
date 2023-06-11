@@ -63,6 +63,9 @@
   ;; liczby złożone
   (histogram (make-complex {:fun :noise-gauss} {:fun :sin}))
 
+  (write "complex" (make-complex {:fun :sin} {:fun :sin :phase 0.5}))
+  (show "complex")
+
   ;; impulsy
   (binding [sampling-period 1/100]
     (show (dop + {:function :sin :duration 0.1  :amplitude 3}
@@ -136,11 +139,13 @@
       (compare (make-lower-pass-filter {:M 80} 10))
       (compare (make-pass-filter {:M 80} 18 22))
       (compare (make-pass-filter {:M 80} 50 60)))))
+
 (comment
   ;; konwolucja / korelacja
   (let [f {:fun :const :end 1}
         g {:fun :triangle :end 0.99999 :fill 0}]
     (show (correlate g f))))
+
 
 ;; korelacyjne wykrywanie odległości
 (defn- calc-delay [signal response]

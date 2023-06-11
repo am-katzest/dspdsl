@@ -306,7 +306,7 @@
             fa (:fun a)
             fb (:fun b)]
         (assoc (combine-meta-fancy a b)
-               :fun #(c/complex (fa %) (fb %))
+               :fun (fn [x] [(fa x) (fb x)])
                :complex true)))))
 
 (def ^:dynamic *interpolate* (fn [x] (sinc-1 x 5)))
