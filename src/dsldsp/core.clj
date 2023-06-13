@@ -169,11 +169,21 @@
 
 (comment
   ;; transformations
-  (def sinusoids (binding [*sampling-period* 1/128]
+  (def sinusoids (binding [*sampling-period* 1/1024]
                    (dop + {:fun :sin :e 1 :period 1/16}
                         {:fun :sin :e 1 :period 1/8 :phase 0.12}
-                        {:fun :sin :e 1 :period 1/32})))
-  (binding [*magnitude* false *together* false] (show (fourier-slow sinusoids))))
+                        {:fun :sin :e 1 :period 1/32 :phase 0.5})))
+  (binding [*magnitude* false *together* false] (show (fourier-slow sinusoids)))
+  (show (fourier-frequency-fast sinusoids))
+  (show sinusoids)
+  (show (kosinus-fast sinusoids))
+  (binding [*sampling-period* 1/1024]
+    (let [xs (dop + {:fun :noise-gauss :A 1/10 :e 1}
+                  {:fun :sin :e 1 :period 1/10})
+          [a b] (wavelet xs)]
+      (show-two a b)
+      (show xs)
+      (show (convolute xs (make-lower-pass-filter {:M 20} 20))))))
 
 (comment
   (do (defn create-latex-table [caption data]
@@ -198,9 +208,9 @@
              with-out-str
              (spit (format "sprawko/%s.tex" caption)))))
 
-  (with-out-str (write-tbl "fourier" 10 1 [["wolna" fourier-slow]
-                                           ["szybka" fourier-fast]]))
-  (with-out-str (write-tbl "kosinus" 10 1 [["wolna" kosinus-slow]
-                                           ["szybka" kosinus-fast]]))
+  (with-out-str (write-tbl "fourier" 10 10 [["wolna" fourier-slow]
+                                            ["szybka" fourier-fast]]))
+  (with-out-str (write-tbl "kosinus" 10 10 [["wolna" kosinus-slow]
+                                            ["szybka" kosinus-fast]]))
   (with-out-str (write-tbl "hadamard" 10 1 [["wolna" hadamard-slow]
                                             ["szybka" hadamard-fast]])))
