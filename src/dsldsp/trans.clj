@@ -11,7 +11,7 @@
 
 (defn perf-stat [f r n]
   (for [x (take n (iterate #(* 2 %) 2))
-        :let [tst (->> x range (map c/+) object-array)
+        :let [tst (->> x range (into []) s/wrap-discrete)
               time (runtime (dotimes [_ r] (f tst)))]]
     time))
 
@@ -21,7 +21,8 @@
 
 (defn- get-signal [{:keys [values imaginary duration] :or {imaginary (repeat 0.)}}]
   (let [pow2size (int (Math/pow 2 (tran/count-bits duration)))
-        formatted (into-array (take pow2size (map c/complex values imaginary)))]))
+        formatted (into-array (take pow2size (map c/complex values imaginary)))]
+    formatted))
 
 (defn- przebrandzluj [f]
   (fn [x] (let [dis (s/discrete x)

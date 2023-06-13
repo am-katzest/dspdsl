@@ -3,6 +3,7 @@
 \usepackage[T1]{polski}
 \newcommand{\BibTeX}{{\sc Bib}\TeX}
 \usepackage{graphicx}
+\usepackage{siunitx}
 \usepackage{hyperref}
 \usepackage{amsmath} \usepackage{amssymb} \usepackage{amsfonts}
 \usepackage[utf8]{inputenc}
@@ -146,7 +147,7 @@ w przestrzeni nazw \cljt{signal} znajdują się dwie funkcje \cljt{convolute} i
 w przestrzeni nazw \cljt{filter} znajdują się funkcje mające na celu ułatwienie
 tworzenia filtrów, najużyteczniejszymi z nich są:
 \begin{itemize}
-	\item \clj{make-filter}, przyjmuje ona mapę z czterema argumentami, \cljt{M}, \cljt{K}, \cljt{pass}
+	\item \cljt{make-filter}, przyjmuje ona mapę z czterema argumentami, \cljt{M}, \cljt{K}, \cljt{pass}
 	      i \cljt{window}, gdzie pass to jedna z funkcji \cljt{middle}, \cljt{upper}
 	      \cljt{lower}, a \cljt{window} to jedno z okien \cljt{square},
 	      \cljt{hamming}, \cljt{blackman}, \cljt{hanning}, zwraca filtr
@@ -161,6 +162,27 @@ tworzenia filtrów, najużyteczniejszymi z nich są:
 	      reprezentujący stopień w jakim przepuszcza je filtr, im mniejszy krok
 	      tym więcej próbek
 \end{itemize}
+\subsection{transformaty}
+w przestrzeni nazw \cljt{trans} znajdują się następujące funkcje:
+\begin{itemize}
+	\item \cljt{fourier-slow} -- transformata fouriera
+	\item \cljt{fourier-fast} -- algorytm szybki, w miejscu, z partycjonowaniem w czasie
+	\item \cljt{fourier-frequency-fast} -- jak wyżej, tylko partycjonowanie jest w przestrzeni
+	\item \cljt{kosinus-slow} -- transformata kosinusowa
+	\item \cljt{kosinus-fast} -- jak wyżej, z wykorzystaniem fft
+	\item \cljt{hadamard-slow} -- mnoży sygnał przez macież Hadamarda
+	\item \cljt{hadamard-fast} -- szybka implementacja powyższego algorytmu
+\end{itemize}
+wszystkie mają też wariant kończący się na \cljt{-rev} odwracający
+transformację.
+w przypadku nierównej 2^n ilości próbek, ostatnie próbki są ucinane.
+\section{wyniki}
+porównanie szybkości
+\input{fourier.tex}
+\input{kosinus.tex}
+\input{hadamard.tex}
+
+
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIBLIOGRAFIA

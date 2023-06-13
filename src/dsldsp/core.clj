@@ -136,7 +136,7 @@
                  {:f :sin :period 1/20}
                  {:f :sin :period 1/5})
           prepare #(cut (sinc-1 % 20) 2.5 2.7)
-          compare #(showf (prepare z) (prepare (convolute z %)))]
+          compare #(show-two (prepare z) (prepare (convolute z %)))]
       (compare (make-lower-pass-filter {:M 80} 10))
       (compare (make-pass-filter {:M 80} 18 22))
       (compare (make-pass-filter {:M 80} 50 60)))))
@@ -165,7 +165,7 @@
                     (for [x (range 0 1 0.01)
                           :let [delayed (cutter (tshift (fop + {:fun :noise} s) x))]]
                       (calc-delay sig delayed))))
-             (showf sig (cutter (tshift s 0.9))))))
+             (show-two sig (cutter (tshift s 0.9))))))
 
 (comment
   ;; transformations
@@ -174,3 +174,33 @@
                         {:fun :sin :e 1 :period 1/8 :phase 0.12}
                         {:fun :sin :e 1 :period 1/32})))
   (binding [*magnitude* false *together* false] (show (fourier-slow sinusoids))))
+
+(comment
+  (do (defn create-latex-table [caption data]
+        (let [data (apply mapv vector data)
+              num-cols (count (first data))]
+          (println "\\begin{table}[H]")
+          (println "\\centering")
+          (println "\\caption{porównanie szybkości implementacji funkcji " caption " (czas w ms}")
+          (println "\\begin{tabular}{|" (apply str (repeat num-cols "S|")) "} \\hline")
+          (println (str (apply str (interpose " & " (map #(str "{" % "}") (first data)))) " \\\\ \\hline"))
+          (doseq [row (rest data)]
+            (println (str (apply str (interpose " & " row)) " \\\\ \\hline")))
+          (println "\\end{tabular}")
+          (println "\\end{table}")))
+
+      (defn write-tbl [caption n r pairs]
+        (->> pairs
+             (map (fn [[title f]]
+                    (cons title (perf-stat f r n))))
+             (cons (cons "n" (map #(int (Math/pow 2 (inc %))) (range n))))
+             (create-latex-table caption)
+             with-out-str
+             (spit (format "sprawko/%s.tex" caption)))))
+
+  (with-out-str (write-tbl "fourier" 10 1 [["wolna" fourier-slow]
+                                           ["szybka" fourier-fast]]))
+  (with-out-str (write-tbl "kosinus" 10 1 [["wolna" kosinus-slow]
+                                           ["szybka" kosinus-fast]]))
+  (with-out-str (write-tbl "hadamard" 10 1 [["wolna" hadamard-slow]
+                                            ["szybka" hadamard-fast]])))
