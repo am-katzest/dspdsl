@@ -175,10 +175,10 @@ w przestrzeni nazw \cljt{trans} znajdują się następujące funkcje:
 \end{itemize}
 wszystkie mają też wariant kończący się na \cljt{-rev} odwracający
 transformację.
-w przypadku nierównej 2^n ilości próbek, ostatnie próbki są ucinane.
-funkcja \cljt{wavelet} zwraca wektor dwóch sygnałów
-\section{wyniki}
-porównanie szybkości
+w przypadku nierównej $2^n$ ilości próbek, ostatnie próbki są ucinane.
+funkcja \cljt{wavelet} zwraca wektor dwóch sygnałów (niskich i wysokich częstotliwości).
+\section{wnioski}
+porównanie szybkości wolnych ($O(n^{2})$) i szybkich ($O(n\cdot\log{n})$) implementacji różnych funkcji:
 \input{fourier.tex}
 \input{kosinus.tex}
 \input{hadamard.tex}

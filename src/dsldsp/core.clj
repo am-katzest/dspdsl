@@ -191,7 +191,7 @@
               num-cols (count (first data))]
           (println "\\begin{table}[H]")
           (println "\\centering")
-          (println "\\caption{porównanie szybkości implementacji funkcji " caption " (czas w ms}")
+          (println "\\caption{porównanie szybkości implementacji funkcji " caption " (czas w ms)}")
           (println "\\begin{tabular}{|" (apply str (repeat num-cols "S|")) "} \\hline")
           (println (str (apply str (interpose " & " (map #(str "{" % "}") (first data)))) " \\\\ \\hline"))
           (doseq [row (rest data)]
